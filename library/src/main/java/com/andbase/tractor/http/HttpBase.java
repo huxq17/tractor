@@ -2,7 +2,7 @@ package com.andbase.tractor.http;
 
 import com.andbase.tractor.listener.LoadListener;
 
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 
 /**
  * http请求的基类
@@ -38,7 +38,7 @@ public interface HttpBase {
 	 * @param json
 	 * @param listener
 	 */
-	public CallWrap post(String url, HashMap<String, String> header, String json,
+	public CallWrap post(String url, LinkedHashMap<String, String> header, String json,
 						 LoadListener listener, Object... tag);
 
 	/**
@@ -49,7 +49,7 @@ public interface HttpBase {
 	 * @param listener
 	 * @param tag
 	 */
-	public CallWrap post(String url, HashMap<String, String> hashMap,
+	public CallWrap post(String url, LinkedHashMap<String, String> hashMap,
 						 LoadListener listener, Object... tag);
 
 	/**

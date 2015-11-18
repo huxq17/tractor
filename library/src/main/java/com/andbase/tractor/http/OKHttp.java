@@ -22,7 +22,7 @@ import com.squareup.okhttp.Response;
 import java.io.IOException;
 import java.net.CookieManager;
 import java.net.CookiePolicy;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.concurrent.TimeUnit;
 
 
@@ -70,12 +70,12 @@ public class OKHttp implements HttpBase {
     }
 
     @Override
-    public CallWrap post(String url, HashMap<String, String> header,
+    public CallWrap post(String url, LinkedHashMap<String, String> header,
                          String params, LoadListener listener, Object... tag) {
         Request.Builder builder = getBuilder().url(url).post(
                 RequestBody.create(MediaTypeWrap.MEDIA_TYPE_MARKDOWN, params));
         if (header != null) {
-            for (HashMap.Entry<String, String> entry : header.entrySet()) {
+            for (LinkedHashMap.Entry<String, String> entry : header.entrySet()) {
                 builder.addHeader(entry.getKey(), entry.getValue());
             }
         }
@@ -84,7 +84,7 @@ public class OKHttp implements HttpBase {
     }
 
     @Override
-    public CallWrap post(String url, HashMap<String, String> params,
+    public CallWrap post(String url, LinkedHashMap<String, String> params,
                          LoadListener listener, Object... tag) {
         RequestBody formBody = addParams(params);
         if (formBody == null) {
@@ -97,7 +97,7 @@ public class OKHttp implements HttpBase {
         }
     }
 
-    public RequestBody addParams(HashMap<String, String> params) {
+    public RequestBody addParams(LinkedHashMap<String, String> params) {
         FormEncodingBuilder formbuiBuilder = new FormEncodingBuilder();
         if (params != null && params.size() > 0) {
             for (String key : params.keySet()) {
@@ -198,5 +198,4 @@ public class OKHttp implements HttpBase {
             }
         });
     }
-
 }
