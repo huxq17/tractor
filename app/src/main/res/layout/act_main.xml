@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <Button
+        android:id="@+id/bt_task_normal"
+        style="@style/bt_style"
+        android:text="普通任务" />
+
+    <Button
+        android:id="@+id/bt_task_timeout"
+        style="@style/bt_style"
+        android:text="超时任务" />
+
+    <Button
+        android:id="@+id/bt_task_get_normal"
+        style="@style/bt_style"
+        android:text="普通get请求" />
+
+    <Button
+        android:id="@+id/bt_task_post_normal"
+        style="@style/bt_style"
+        android:text="普通post请求" />
+
+    <Button
+        android:id="@+id/bt_task_cancel"
+        style="@style/bt_style"
+        android:text="取消任务" />
+
+</LinearLayout>

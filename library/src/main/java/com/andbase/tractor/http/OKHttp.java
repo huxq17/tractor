@@ -63,6 +63,9 @@ public class OKHttp implements HttpBase {
     @Override
     public CallWrap post(String url, String params, LoadListener listener,
                          Object... tag) {
+        if(params==null){
+            throw new RuntimeException("params is null");
+        }
         Request.Builder builder = getBuilder().url(url).post(
                 RequestBody.create(MediaTypeWrap.MEDIA_TYPE_MARKDOWN, params));
         addTag(builder, tag);
@@ -88,8 +91,7 @@ public class OKHttp implements HttpBase {
                          LoadListener listener, Object... tag) {
         RequestBody formBody = addParams(params);
         if (formBody == null) {
-            listener.onFail("params is null");
-            return null;
+            throw new RuntimeException("params is null");
         } else {
             Request.Builder builder = getBuilder().url(url).post(formBody);
             addTag(builder, tag);
@@ -146,8 +148,9 @@ public class OKHttp implements HttpBase {
             public void onRun() {
                 try {
                     Response response = call.execute();
+                    long length = response.body().contentLength();
                     String result = response.body().string();
-                    LogUtils.d("okresult=" + result);
+                    LogUtils.d("okresult=" + result+";length="+length);
                     notifySuccess(result);
                 } catch (Exception e) {
                     if (e.toString().toLowerCase().contains("canceled")

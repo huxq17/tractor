@@ -1,3 +1,7 @@
 <resources>
-
+<style name="bt_style">
+    <item name="android:layout_width">wrap_content</item>
+    <item name="android:layout_height">wrap_content</item>
+    <item name="android:onClick">onClick</item>
+</style>
 </resources>

@@ -43,7 +43,7 @@ public abstract class TimeoutCountTask extends Task {
 
 	@Override
 	public void cancelTask() {
-		cancel();
+//		cancel();
 	}
 
 	/**

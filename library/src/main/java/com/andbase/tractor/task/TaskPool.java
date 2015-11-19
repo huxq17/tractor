@@ -1,5 +1,7 @@
 package com.andbase.tractor.task;
 
+import com.andbase.tractor.handler.LoadHandler;
+import com.andbase.tractor.listener.impl.LoadListenerImpl;
 import com.andbase.tractor.task.threadpool.CachedThreadPool;
 import com.andbase.tractor.utils.LogUtils;
 
@@ -13,8 +15,10 @@ public class TaskPool {
 	private LinkedList<Task> mTaskQueue = new LinkedList<Task>();
 	private ThreadPool mThreadPool;
 	private ExecutorService mTimeCountService;
+	private ExecutorService mCancelService;
 	private TaskPool() {
 		mTimeCountService = Executors.newCachedThreadPool();
+		mCancelService = Executors.newCachedThreadPool();
 	}
 
 	public static TaskPool getInstance() {
@@ -66,6 +70,8 @@ public class TaskPool {
 		});
 		if(task instanceof TimeoutCountTask){
 			mTimeCountService.execute(task);
+		}else if(task instanceof  CancelTask){
+			mCancelService.execute(task);
 		}else{
 			mThreadPool.execute(task);
 		}
@@ -109,11 +115,19 @@ public class TaskPool {
 	 * @param task
 	 *            要取消的任务
 	 */
-	public void cancelTask(Task task) {
+	public void cancelTask(final Task task) {
 		if (task == null) {
 			return;
 		}
-		task.cancel();
+		//异步取消任务
+		LoadHandler handler = new LoadHandler(new LoadListenerImpl(){
+			@Override
+			public void onSuccess(Object result) {
+				super.onSuccess(result);
+				task.cancel();
+			}
+		});
+		execute(new CancelTask(task,handler));
 	}
 
 	@Override

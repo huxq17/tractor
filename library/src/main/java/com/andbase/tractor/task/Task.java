@@ -1,13 +1,13 @@
 package com.andbase.tractor.task;
 
-import java.lang.ref.WeakReference;
-
 import android.text.TextUtils;
 
 import com.andbase.tractor.Constants.Constants;
 import com.andbase.tractor.handler.LoadHandler;
 import com.andbase.tractor.utils.HandlerUtils;
 import com.andbase.tractor.utils.LogUtils;
+
+import java.lang.ref.WeakReference;
 
 
 /**
@@ -88,7 +88,7 @@ public abstract class Task implements Runnable {
 	public abstract void onRun();
 
 	/**
-	 * 实现这个方法来执行具体取消任务的操作
+	 * 实现这个方法来执行具体取消任务的操作，执行在非ui线程
 	 */
 	public abstract void cancelTask();
 
@@ -207,7 +207,7 @@ public abstract class Task implements Runnable {
 	}
 
 	public void cancel() {
-		cancelTask();
+//		cancelTask();
 		notifyCancel(null);
 		mHandler = null;
 		clear();

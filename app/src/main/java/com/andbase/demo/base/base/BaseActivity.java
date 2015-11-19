@@ -3,6 +3,8 @@ package com.andbase.demo.base.base;
 import android.app.Activity;
 import android.content.Context;
 
+import com.andbase.tractor.task.TaskPool;
+
 public class BaseActivity extends Activity {
 
 	private Base mBase;
@@ -81,5 +83,12 @@ public class BaseActivity extends Activity {
 		if (mBase != null) {
 			mBase.toastAllL(msg);
 		}
+	}
+
+	@Override
+	protected void onDestroy() {
+		super.onDestroy();
+		//当activity或者fragment销毁了，最好取消这个页面上的请求，防止一些异常
+		TaskPool.getInstance().cancelTask(this);
 	}
 }

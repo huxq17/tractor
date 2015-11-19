@@ -7,7 +7,7 @@ import com.andbase.tractor.http.HttpBase;
 import com.andbase.tractor.http.OKHttp;
 import com.andbase.tractor.listener.LoadListener;
 
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 
 /**
  * Created by Administrator on 2015/11/16.
@@ -17,7 +17,7 @@ public class HttpUtils {
 
 
     public static CallWrap post(final String url,
-                                HashMap<String, String> header, final String params,
+                                LinkedHashMap<String, String> header, final String params,
                                 final LoadListener listener, Object... tag) {
         return mHttpBase.post(url, header, params, listener, tag);
     }
