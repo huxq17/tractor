@@ -32,7 +32,7 @@ public class TaskPool {
 		initExecutorService(threadPool);
 	}
 
-	public static class TaskPoolHolder {
+	private static class TaskPoolHolder {
 		private static TaskPool instance = new TaskPool();
 	}
 

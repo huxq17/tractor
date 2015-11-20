@@ -2,6 +2,7 @@ package com.andbase.demo;
 
 import android.os.Bundle;
 import android.os.SystemClock;
+import android.text.TextUtils;
 import android.view.View;
 
 import com.andbase.demo.base.base.BaseActivity;
@@ -10,6 +11,7 @@ import com.andbase.tractor.listener.LoadListener;
 import com.andbase.tractor.listener.impl.LoadListenerImpl;
 import com.andbase.tractor.task.Task;
 import com.andbase.tractor.task.TaskPool;
+import com.andbase.tractor.utils.Util;
 
 import java.util.Random;
 
@@ -17,7 +19,8 @@ import java.util.Random;
  * Created by Administrator on 2015/11/16.
  */
 public class MainActivity extends BaseActivity {
-    private String downloadUrl = "https://github.com/huxq17/tractor/blob/master/README.md?raw=true";
+    private String downloadUrl = "https://github.com/huxq17/okhttp-utils/blob/master/gson-2.2.1.jar?raw=true";
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -28,19 +31,28 @@ public class MainActivity extends BaseActivity {
         int id = v.getId();
         switch (id) {
             case R.id.bt_task_normal:
-                doNormalTask(new LoadListenerImpl() {
+                //当LoadListenerImpl构造函数传入context，则显示progressdialog
+                doNormalTask(new LoadListenerImpl(this) {
+                    @Override
+                    public void onStart() {
+                        super.onStart();
+                        setMessage("任务开始");
+                    }
+
                     @Override
                     public void onSuccess(Object result) {
                         super.onSuccess(result);
                         String response = (String) result;
-                        toast(response);
+//                        toast(response);
+                        setMessage("任务结束");
                     }
 
                     @Override
                     public void onFail(Object result) {
                         super.onFail(result);
                         String response = (String) result;
-                        toast(response);
+//                        toast(response);
+                        setMessage(response);
                     }
 
                     @Override
@@ -50,13 +62,16 @@ public class MainActivity extends BaseActivity {
                         int response = (int) result;
                         switch (response) {
                             case 1:
-                                toast("正在执行 response=" + response);
+//                                toast("正在执行 response=" + response);
+                                setMessage("正在执行 response=" + response);
                                 break;
                             case 2:
-                                toast("正在执行 response=" + response);
+//                                toast("正在执行 response=" + response);
+                                setMessage("正在执行 response=" + response);
                                 break;
                             case 3:
-                                toast("正在执行 response=" + response);
+//                                toast("正在执行 response=" + response);
+                                setMessage("正在执行 response=" + response);
                                 break;
                             default:
                                 break;
@@ -67,6 +82,12 @@ public class MainActivity extends BaseActivity {
                     public void onCancel(Object result) {
                         super.onCancel(result);
                         toast("任务被取消了");
+                    }
+
+                    @Override
+                    public void onCancelClick() {
+                        super.onCancelClick();
+                        TaskPool.getInstance().cancelTask(MainActivity.this);
                     }
                 }, this);
                 break;
@@ -119,6 +140,16 @@ public class MainActivity extends BaseActivity {
                 break;
             case R.id.bt_task_post_normal:
                 break;
+            case R.id.bt_task_download:
+                String sdcardPath = Util.getSdcardPath();
+                if (TextUtils.isEmpty(sdcardPath)) {
+                    toast("没有sd卡");
+                    return;
+                }
+                HttpUtils.download(downloadUrl, sdcardPath + "/tractor/download/" , 3, new LoadListenerImpl() {
+
+                }, this);
+                break;
         }
     }
 
@@ -144,7 +175,6 @@ public class MainActivity extends BaseActivity {
                 Random random = new Random();
                 //任务是模拟的，所以随机下
                 if (random.nextBoolean()) {
-                    notifySuccess("任务成功了");
                 } else {
                     notifyFail("糟糕，任务失败了");
                 }
@@ -157,6 +187,12 @@ public class MainActivity extends BaseActivity {
         });
     }
 
+    /**
+     *
+     * @param timeout 设置任务的timeout
+     * @param listener
+     * @param tag
+     */
     public void doTimeoutTask(long timeout, LoadListener listener, Object tag) {
         LoadHandler handler = new LoadHandler(listener);
         TaskPool.getInstance().execute(new Task(timeout, tag, handler) {

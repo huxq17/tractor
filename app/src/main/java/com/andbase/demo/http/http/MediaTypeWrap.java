@@ -1,6 +1,7 @@
-package com.andbase.tractor.http;
+package com.andbase.demo.http.http;
 
 import com.squareup.okhttp.MediaType;
+
 /**
  * 进行post请求时
  * @author huxq17

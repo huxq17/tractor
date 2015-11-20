@@ -1,6 +1,7 @@
-package com.andbase.tractor.http;
+package com.andbase.demo.http.http;
 
 import com.squareup.okhttp.Call;
+
 /**
  * 用来取消单次请求的类
  * @author huxq17
