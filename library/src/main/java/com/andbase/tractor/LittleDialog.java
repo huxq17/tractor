@@ -63,8 +63,7 @@ public class LittleDialog extends ProgressDialog {
                 context, 84));
 
         RelativeLayout.LayoutParams pblp = new RelativeLayout.LayoutParams(
-                DensityUtil.dip2px(context, 19), DensityUtil.dip2px(
-                context, 19));
+                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         mProgressBar = new ProgressBar(context);
         mProgressBar.setId(101);
         pblp.addRule(RelativeLayout.CENTER_VERTICAL);
