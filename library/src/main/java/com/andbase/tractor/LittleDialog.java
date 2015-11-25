@@ -59,7 +59,7 @@ public class LittleDialog extends ProgressDialog {
         super.show();
         RelativeLayout contentView = new RelativeLayout(context);
         ViewGroup.LayoutParams rlp = new ViewGroup.LayoutParams(
-                DensityUtil.dip2px(context, 330), DensityUtil.dip2px(
+                ViewGroup.LayoutParams.WRAP_CONTENT, DensityUtil.dip2px(
                 context, 84));
 
         RelativeLayout.LayoutParams pblp = new RelativeLayout.LayoutParams(

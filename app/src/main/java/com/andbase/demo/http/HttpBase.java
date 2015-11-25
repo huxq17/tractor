@@ -1,4 +1,4 @@
-package com.andbase.demo.http.http;
+package com.andbase.demo.http;
 
 import com.andbase.tractor.listener.LoadListener;
 
@@ -12,13 +12,12 @@ public interface HttpBase {
      * GET请求数据
      *
      * @param url
+     * @param header
      * @param listener
      * @param tag
      * @return callWrap可以用来取消这次请求
      */
-    public CallWrap get(String url, LoadListener listener, Object... tag);
-
-    public CallWrap get(String url, LinkedHashMap<String, String> header,
+    public void get(String url, LinkedHashMap<String, String> header,
                                                  LoadListener listener, Object... tag);
 
     /**
@@ -29,7 +28,7 @@ public interface HttpBase {
      * @param listener
      * @param tag
      */
-    public CallWrap post(String url, String string, LoadListener listener,
+    public void post(String url, String string, LoadListener listener,
                                                   Object... tag);
 
     /**
@@ -40,18 +39,18 @@ public interface HttpBase {
      * @param json
      * @param listener
      */
-    public CallWrap post(String url, LinkedHashMap<String, String> header, String json,
+    public void post(String url, LinkedHashMap<String, String> header, String json,
                                                   LoadListener listener, Object... tag);
 
     /**
      * POST提交键值对
      *
      * @param url
-     * @param hashMap
+     * @param params
      * @param listener
      * @param tag
      */
-    public CallWrap post(String url, LinkedHashMap<String, String> hashMap,
+    public void post(String url, LinkedHashMap<String, String> params,
                                                   LoadListener listener, Object... tag);
 
     /**
@@ -62,7 +61,7 @@ public interface HttpBase {
      * @param tag
      * @return
      */
-    public CallWrap header(String url, LoadListener listener, Object... tag);
+    public void header(String url, LoadListener listener, Object... tag);
 
     /**
      * 取消请求
@@ -71,5 +70,5 @@ public interface HttpBase {
      */
     public void cancel(Object... tag);
 
-    public CallWrap download(String url, String filepath, LinkedHashMap<String, String> header, final long startposition, final LoadListener listener, Object tag);
+    public void download(String url, String filepath, LinkedHashMap<String, String> header, final long startposition, final LoadListener listener, Object tag);
 }

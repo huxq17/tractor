@@ -1,4 +1,4 @@
-package com.andbase.demo.http.http;
+package com.andbase.demo.http;
 
 import android.annotation.TargetApi;
 import android.os.Build;
@@ -54,15 +54,14 @@ public class OKHttp implements HttpBase {
         }
     }
 
-    @Override
-    public CallWrap get(String url, LoadListener listener, Object... tag) {
+    public void get(String url, LoadListener listener, Object... tag) {
         Request.Builder builder = getBuilder().url(url);
         addTag(builder, tag);
-        return execute(builder.build(), listener, getTag(tag));
+        execute(builder.build(), listener, getTag(tag));
     }
 
-    public CallWrap get(String url, LinkedHashMap<String, String> header,
-                          LoadListener listener, Object... tag) {
+    public void get(String url, LinkedHashMap<String, String> header,
+                    LoadListener listener, Object... tag) {
         Request.Builder builder = getBuilder().url(url);
         if (header != null) {
             for (LinkedHashMap.Entry<String, String> entry : header.entrySet()) {
@@ -70,24 +69,25 @@ public class OKHttp implements HttpBase {
             }
         }
         addTag(builder, tag);
-        return execute(builder.build(), listener, getTag(tag));
+        execute(builder.build(), listener, getTag(tag));
     }
 
+
     @Override
-    public CallWrap post(String url, String params, LoadListener listener,
-                         Object... tag) {
+    public void post(String url, String params, LoadListener listener,
+                     Object... tag) {
         if (params == null) {
             throw new RuntimeException("params is null");
         }
         Request.Builder builder = getBuilder().url(url).post(
-                RequestBody.create(com.andbase.demo.http.http.MediaTypeWrap.MEDIA_TYPE_MARKDOWN, params));
+                RequestBody.create(MediaTypeWrap.MEDIA_TYPE_MARKDOWN, params));
         addTag(builder, tag);
-        return execute(builder.build(), listener, getTag(tag));
+        execute(builder.build(), listener, getTag(tag));
     }
 
     @Override
-    public CallWrap post(String url, LinkedHashMap<String, String> header,
-                         String params, LoadListener listener, Object... tag) {
+    public void post(String url, LinkedHashMap<String, String> header,
+                     String params, LoadListener listener, Object... tag) {
         Request.Builder builder = getBuilder().url(url).post(
                 RequestBody.create(MediaTypeWrap.MEDIA_TYPE_MARKDOWN, params));
         if (header != null) {
@@ -96,26 +96,26 @@ public class OKHttp implements HttpBase {
             }
         }
         addTag(builder, tag);
-        return execute(builder.build(), listener, getTag(tag));
+        execute(builder.build(), listener, getTag(tag));
     }
 
     @Override
-    public CallWrap post(String url, LinkedHashMap<String, String> params,
-                         LoadListener listener, Object... tag) {
+    public void post(String url, LinkedHashMap<String, String> params,
+                     LoadListener listener, Object... tag) {
         RequestBody formBody = addParams(params);
         if (formBody == null) {
             throw new RuntimeException("params is null");
         } else {
             Request.Builder builder = getBuilder().url(url).post(formBody);
             addTag(builder, tag);
-            return execute(builder.build(), listener, getTag(tag));
+            execute(builder.build(), listener, getTag(tag));
         }
     }
 
-    public CallWrap header(String url, LoadListener listener, Object... tag) {
+    public void header(String url, LoadListener listener, Object... tag) {
         Request.Builder builder = getBuilder().url(url).head();
         addTag(builder, tag);
-        return executeHeader(builder.build(), listener, getTag(tag));
+        executeHeader(builder.build(), listener, getTag(tag));
     }
 
     public RequestBody addParams(LinkedHashMap<String, String> params) {
@@ -155,12 +155,10 @@ public class OKHttp implements HttpBase {
         return new Request.Builder();
     }
 
-    private CallWrap execute(final Request request,
-                             final LoadListener listener, Object tag) {
+    private void execute(final Request request,
+                         final LoadListener listener, Object tag) {
         final LoadHandler handler = new LoadHandler(listener);
-        CallWrap callWrap = new CallWrap();
         final Call call = mOkHttpClient.newCall(request);
-        callWrap.setCall(call);
         Task netWorkTask = new Task(tag, handler) {
             @Override
             public void onRun() {
@@ -187,15 +185,12 @@ public class OKHttp implements HttpBase {
             }
         };
         TaskPool.getInstance().execute(netWorkTask);
-        return callWrap;
     }
 
-    private CallWrap executeHeader(final Request request,
-                             final LoadListener listener, Object tag) {
+    private void executeHeader(final Request request,
+                               final LoadListener listener, Object tag) {
         final LoadHandler handler = new LoadHandler(listener);
-        CallWrap callWrap = new CallWrap();
         final Call call = mOkHttpClient.newCall(request);
-        callWrap.setCall(call);
         Task netWorkTask = new Task(tag, handler) {
             @Override
             public void onRun() {
@@ -222,10 +217,9 @@ public class OKHttp implements HttpBase {
             }
         };
         TaskPool.getInstance().execute(netWorkTask);
-        return callWrap;
     }
 
-    public CallWrap download(String url,final String filepath,LinkedHashMap<String,String> header, final long startposition,final LoadListener listener, Object tag) {
+    public void download(String url, final String filepath, LinkedHashMap<String, String> header, final long startposition, final LoadListener listener, Object tag) {
         Request.Builder builder = getBuilder().url(url);
         if (header != null) {
             for (LinkedHashMap.Entry<String, String> entry : header.entrySet()) {
@@ -234,9 +228,7 @@ public class OKHttp implements HttpBase {
         }
         addTag(builder, tag);
         final LoadHandler handler = new LoadHandler(listener);
-        CallWrap callWrap = new CallWrap();
         final Call call = mOkHttpClient.newCall(builder.build());
-        callWrap.setCall(call);
         TaskPool.getInstance().execute(new Task(tag, handler) {
             @Override
             public void onRun() {
@@ -247,7 +239,7 @@ public class OKHttp implements HttpBase {
                     RandomAccessFile accessFile = new RandomAccessFile(saveFile, "rwd");
                     accessFile.seek(startposition);// 设置从什么位置开始写入数据
 
-                     byte[] buffer = new byte[1024];
+                    byte[] buffer = new byte[1024];
                     int len = 0;
                     int total = 0;
                     while ((len = inStream.read(buffer)) != -1) {
@@ -267,6 +259,5 @@ public class OKHttp implements HttpBase {
 
             }
         });
-        return callWrap;
     }
 }

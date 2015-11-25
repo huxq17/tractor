@@ -1,4 +1,4 @@
-package com.andbase.demo.base.base;
+package com.andbase.demo.base;
 
 import android.app.Activity;
 import android.content.Context;
@@ -12,7 +12,7 @@ public class BaseActivity extends Activity {
 	@Override
 	protected void attachBaseContext(Context newBase) {
 		super.attachBaseContext(newBase);
-		mBase = new Base(this);
+		mBase = Base.getInstance(getApplicationContext());
 	}
 
 	/**

@@ -1,4 +1,4 @@
-package com.andbase.demo.http.http;
+package com.andbase.demo.http;
 
 import com.squareup.okhttp.MediaType;
 

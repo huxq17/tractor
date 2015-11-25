@@ -5,7 +5,7 @@ import android.os.SystemClock;
 import android.text.TextUtils;
 import android.view.View;
 
-import com.andbase.demo.base.base.BaseActivity;
+import com.andbase.demo.base.BaseActivity;
 import com.andbase.tractor.handler.LoadHandler;
 import com.andbase.tractor.listener.LoadListener;
 import com.andbase.tractor.listener.impl.LoadListenerImpl;
