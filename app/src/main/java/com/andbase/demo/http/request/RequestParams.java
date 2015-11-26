@@ -9,6 +9,9 @@ import java.util.LinkedHashMap;
  * Created by 2144 on 2015/11/26.
  */
 public class RequestParams {
+    private String contentType = "application/x-www-form-urlencoded";
+    private String charSet = "utf-8";
+
     private LinkedHashMap<String, Object> mParams;
     private LinkedHashMap<String, FileBody> mFileParams;
 
@@ -61,6 +64,22 @@ public class RequestParams {
 
     public LinkedHashMap<String, FileBody> getmFileParams() {
         return mFileParams;
+    }
+
+    public void setContentType(String contentType) {
+        this.contentType = contentType;
+    }
+
+    public void setCharSet(String charSet) {
+        this.charSet = charSet;
+    }
+
+    public String getContentType() {
+        return contentType;
+    }
+
+    public String getCharSet() {
+        return charSet;
     }
 
     @Override

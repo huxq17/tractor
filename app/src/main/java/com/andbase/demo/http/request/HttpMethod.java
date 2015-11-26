@@ -22,6 +22,28 @@ public enum HttpMethod {
         this.value = value;
     }
 
+    public static boolean permitsRetry(HttpMethod method) {
+        return method == GET;
+    }
+
+    public static boolean permitsCache(HttpMethod method) {
+        return method == GET || method == POST;
+    }
+
+    public static boolean permitsRequestBody(HttpMethod method) {
+        return method == POST
+                || method == PUT
+                || method == PATCH
+                || method == DELETE;
+    }
+
+    public static boolean invalidatesCache(String method) {
+        return method.equals("POST")
+                || method.equals("PATCH")
+                || method.equals("PUT")
+                || method.equals("DELETE");
+    }
+
     @Override
     public String toString() {
         return this.value;

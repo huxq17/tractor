@@ -15,7 +15,6 @@ public interface HttpBase {
      * @param header
      * @param listener
      * @param tag
-     * @return callWrap可以用来取消这次请求
      */
     public void get(String url, LinkedHashMap<String, String> header,
                                                  LoadListener listener, Object... tag);

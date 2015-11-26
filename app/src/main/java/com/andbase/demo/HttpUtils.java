@@ -2,9 +2,8 @@ package com.andbase.demo;
 
 import android.text.TextUtils;
 
-import com.andbase.demo.http.http.CallWrap;
-import com.andbase.demo.http.http.HttpBase;
-import com.andbase.demo.http.http.OKHttp;
+import com.andbase.demo.http.HttpBase;
+import com.andbase.demo.http.OKHttp;
 import com.andbase.tractor.listener.LoadListener;
 import com.andbase.tractor.listener.impl.LoadListenerImpl;
 import com.andbase.tractor.utils.LogUtils;
@@ -21,28 +20,28 @@ public class HttpUtils {
     static HttpBase mHttpBase = new OKHttp();
 
 
-    public static CallWrap post(final String url,
+    public static void post(final String url,
                                 LinkedHashMap<String, String> header, final String params,
                                 final LoadListener listener, Object... tag) {
-        return mHttpBase.post(url, header, params, listener, tag);
+         mHttpBase.post(url, header, params, listener, tag);
     }
 
-    public static CallWrap post(final String url,
+    public static void post(final String url,
                                 final String params, final LoadListener listener,
                                 Object... tag) {
 
-        return mHttpBase.post(url, params, listener, tag);
+         mHttpBase.post(url, params, listener, tag);
     }
 
-    public static CallWrap get(String url, final String params,
+    public static void get(String url, final String params,
                                final LoadListener listener, Object... tag) {
         if (!TextUtils.isEmpty(params)) {
             url = url + "?" + params;
         }
-        return mHttpBase.get(url, listener, tag);
+//         mHttpBase.get(url, listener, tag);
     }
     static int completed = 0;
-    public static CallWrap download(final String url, final String filePath, final int threadNum, final LoadListener listener, final Object... tag) {
+    public static void download(final String url, final String filePath, final int threadNum, final LoadListener listener, final Object... tag) {
         mHttpBase.header(url, new LoadListenerImpl() {
             @Override
             public void onSuccess(Object result) {
@@ -88,6 +87,5 @@ public class HttpUtils {
                 }
             }
         }, tag);
-        return null;
     }
 }
