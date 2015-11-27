@@ -19,9 +19,10 @@ public final class HttpHeader {
     public void removeHeader(String name){
         mHeader.remove(name);
     }
+    public HashMap<String,String> getHeaders(){
+        return mHeader;
+    }
     public void clear(){
         mHeader.clear();
     }
-
-
 }

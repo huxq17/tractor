@@ -9,21 +9,46 @@ public class HttpRequest {
     private HttpHeader header;
     private HttpMethod method;
     private RequestParams requestParams;
+    private String url;
+
+    public HttpHeader getHeader() {
+        return header;
+    }
+
+    public HttpMethod getMethod() {
+        return method;
+    }
+
+    public RequestParams getRequestParams() {
+        return requestParams;
+    }
+
+    public String getUrl() {
+        return url;
+    }
 
     private HttpRequest(Builder builder) {
         this.header = builder.header;
         this.method = builder.method;
         this.requestParams = builder.requestParams;
+        this.url = builder.url;
     }
 
     public static class Builder {
         private HttpHeader header;
         private HttpMethod method;
         private RequestParams requestParams;
+        private String url;
+
         public Builder() {
             header = new HttpHeader();
             method = HttpMethod.GET;
             requestParams = new RequestParams();
+        }
+
+        public Builder url(String url) {
+            this.url = url;
+            return this;
         }
 
         public Builder setHeader(HttpHeader header) {
@@ -49,6 +74,20 @@ public class HttpRequest {
                 throw new RuntimeException("params==null");
             }
             this.requestParams = params;
+            return this;
+        }
+
+        public Builder setStringParams(String params) {
+            requestParams.setStringParams(params);
+        }
+
+        public Builder contentType(String contentType) {
+            requestParams.setContentType(contentType);
+            return this;
+        }
+
+        public Builder charSet(String charset) {
+            requestParams.setCharSet(charset);
             return this;
         }
 

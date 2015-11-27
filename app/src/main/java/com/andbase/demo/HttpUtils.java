@@ -4,6 +4,9 @@ import android.text.TextUtils;
 
 import com.andbase.demo.http.HttpBase;
 import com.andbase.demo.http.OKHttp;
+import com.andbase.demo.http.request.HttpHeader;
+import com.andbase.demo.http.request.HttpRequest;
+import com.andbase.demo.http.request.RequestParams;
 import com.andbase.tractor.listener.LoadListener;
 import com.andbase.tractor.listener.impl.LoadListenerImpl;
 import com.andbase.tractor.utils.LogUtils;
@@ -21,26 +24,31 @@ public class HttpUtils {
 
 
     public static void post(final String url,
-                                LinkedHashMap<String, String> header, final String params,
-                                final LoadListener listener, Object... tag) {
-         mHttpBase.post(url, header, params, listener, tag);
-    }
-
-    public static void post(final String url,
-                                final String params, final LoadListener listener,
-                                Object... tag) {
-
-         mHttpBase.post(url, params, listener, tag);
+                            LinkedHashMap<String, String> headers, final String params,
+                            final LoadListener listener, Object... tag) {
+        HttpRequest.Builder builder = new HttpRequest.Builder();
+        builder.url(url);
+        if (headers != null && headers.size() > 0) {
+            for (LinkedHashMap.Entry<String, String> header : headers.entrySet()
+                    ) {
+                builder.addHeader(header.getKey(), header.getValue());
+            }
+        }
+        builder.setStringParams(params).contentType("application/x-www-form-urlencoded").charSet("utf-8");
+        HttpRequest request = builder.build();
+        mHttpBase.post(request, listener, tag);
     }
 
     public static void get(String url, final String params,
-                               final LoadListener listener, Object... tag) {
+                           final LoadListener listener, Object... tag) {
         if (!TextUtils.isEmpty(params)) {
             url = url + "?" + params;
         }
 //         mHttpBase.get(url, listener, tag);
     }
+
     static int completed = 0;
+
     public static void download(final String url, final String filePath, final int threadNum, final LoadListener listener, final Object... tag) {
         mHttpBase.header(url, new LoadListenerImpl() {
             @Override
@@ -56,9 +64,9 @@ public class HttpUtils {
                 if (!file.exists()) {
                     file.mkdirs();
                 }
-                File saveFile = new File(filePath +  Util.getFilename(url));
-               ;
-                LogUtils.i("saveFile=" + filePath +  Util.getFilename(url));
+                File saveFile = new File(filePath + Util.getFilename(url));
+                ;
+                LogUtils.i("saveFile=" + filePath + Util.getFilename(url));
                 RandomAccessFile accessFile = null;
                 try {
                     accessFile = new RandomAccessFile(saveFile, "rwd");
@@ -72,13 +80,13 @@ public class HttpUtils {
                         LinkedHashMap<String, String> header = new LinkedHashMap<>();
                         header.put("RANGE", "bytes=" + startposition + "-"
                                 + endposition);
-                        mHttpBase.download(url, filePath +  Util.getFilename(url), header, startposition, new LoadListenerImpl() {
+                        mHttpBase.download(url, filePath + Util.getFilename(url), header, startposition, new LoadListenerImpl() {
                             @Override
                             public void onLoading(Object result) {
                                 super.onLoading(result);
                                 int process = (int) result;
-                                completed +=process;
-                                LogUtils.i("process = "+(1.0f*completed/filelength));
+                                completed += process;
+                                LogUtils.i("process = " + (1.0f * completed / filelength));
                             }
                         }, tag);
                     }

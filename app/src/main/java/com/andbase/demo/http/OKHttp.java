@@ -2,7 +2,12 @@ package com.andbase.demo.http;
 
 import android.annotation.TargetApi;
 import android.os.Build;
+import android.text.TextUtils;
 
+import com.andbase.demo.http.request.HttpHeader;
+import com.andbase.demo.http.request.HttpMethod;
+import com.andbase.demo.http.request.HttpRequest;
+import com.andbase.demo.http.request.RequestParams;
 import com.andbase.tractor.handler.LoadHandler;
 import com.andbase.tractor.listener.LoadListener;
 import com.andbase.tractor.task.Task;
@@ -10,8 +15,8 @@ import com.andbase.tractor.task.TaskPool;
 import com.andbase.tractor.utils.LogUtils;
 import com.andbase.tractor.utils.Util;
 import com.squareup.okhttp.Call;
-import com.squareup.okhttp.FormEncodingBuilder;
 import com.squareup.okhttp.Interceptor;
+import com.squareup.okhttp.MediaType;
 import com.squareup.okhttp.OkHttpClient;
 import com.squareup.okhttp.Request;
 import com.squareup.okhttp.RequestBody;
@@ -23,6 +28,7 @@ import java.io.InputStream;
 import java.io.RandomAccessFile;
 import java.net.CookieManager;
 import java.net.CookiePolicy;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.concurrent.TimeUnit;
 
@@ -54,63 +60,59 @@ public class OKHttp implements HttpBase {
         }
     }
 
-    public void get(String url, LoadListener listener, Object... tag) {
-        Request.Builder builder = getBuilder().url(url);
-        addTag(builder, tag);
-        execute(builder.build(), listener, getTag(tag));
-    }
-
-    public void get(String url, LinkedHashMap<String, String> header,
-                    LoadListener listener, Object... tag) {
-        Request.Builder builder = getBuilder().url(url);
-        if (header != null) {
-            for (LinkedHashMap.Entry<String, String> entry : header.entrySet()) {
-                builder.addHeader(entry.getKey(), entry.getValue());
-            }
+    @Override
+    public void get(HttpRequest request, LoadListener listener, Object tag) {
+        String url = request.getUrl();
+        RequestParams requestParams = request.getRequestParams();
+        HttpHeader header = request.getHeader();
+        String params = requestParams.toString();
+        if (TextUtils.isEmpty(params)) {
+            url += "?" + params;
         }
+        LogUtils.d("get url=" + url);
+
+        Request.Builder builder = getBuilder().url(url);
+        addHeader(builder, header);
         addTag(builder, tag);
         execute(builder.build(), listener, getTag(tag));
     }
-
 
     @Override
-    public void post(String url, String params, LoadListener listener,
-                     Object... tag) {
-        if (params == null) {
+    public void post(HttpRequest request, LoadListener listener, Object tag) {
+        String url = request.getUrl();
+        RequestParams requestParams = request.getRequestParams();
+        HttpHeader header = request.getHeader();
+        String params = requestParams.toString();
+        String contentType = requestParams.getContentType();
+        String charset = requestParams.getCharSet();
+        if(params==null|| TextUtils.isEmpty(contentType)||TextUtils.isEmpty(charset)){
             throw new RuntimeException("params is null");
         }
-        Request.Builder builder = getBuilder().url(url).post(
-                RequestBody.create(MediaTypeWrap.MEDIA_TYPE_MARKDOWN, params));
+        Request.Builder builder = getBuilder().url(url).post(RequestBody.create(MediaType.parse(contentType + ";" + charset), params));
+        addHeader(builder, header);
         addTag(builder, tag);
         execute(builder.build(), listener, getTag(tag));
     }
 
     @Override
-    public void post(String url, LinkedHashMap<String, String> header,
-                     String params, LoadListener listener, Object... tag) {
-        Request.Builder builder = getBuilder().url(url).post(
-                RequestBody.create(MediaTypeWrap.MEDIA_TYPE_MARKDOWN, params));
-        if (header != null) {
-            for (LinkedHashMap.Entry<String, String> entry : header.entrySet()) {
-                builder.addHeader(entry.getKey(), entry.getValue());
+    public void request(HttpMethod method, HttpRequest request, LoadListener listener, Object tag) {
+        String url = request.getUrl();
+        RequestParams requestParams = request.getRequestParams();
+        HttpHeader header = request.getHeader();
+        String params = requestParams.toString();
+
+    }
+
+    private void addHeader(Request.Builder builder,HttpHeader header) {
+        HashMap<String, String> headers = header.getHeaders();
+        if (headers != null && headers.size() > 0) {
+            for (HashMap.Entry<String, String> map :
+                    headers.entrySet()) {
+                builder.addHeader(map.getKey(), map.getValue());
             }
         }
-        addTag(builder, tag);
-        execute(builder.build(), listener, getTag(tag));
     }
 
-    @Override
-    public void post(String url, LinkedHashMap<String, String> params,
-                     LoadListener listener, Object... tag) {
-        RequestBody formBody = addParams(params);
-        if (formBody == null) {
-            throw new RuntimeException("params is null");
-        } else {
-            Request.Builder builder = getBuilder().url(url).post(formBody);
-            addTag(builder, tag);
-            execute(builder.build(), listener, getTag(tag));
-        }
-    }
 
     public void header(String url, LoadListener listener, Object... tag) {
         Request.Builder builder = getBuilder().url(url).head();
@@ -118,16 +120,16 @@ public class OKHttp implements HttpBase {
         executeHeader(builder.build(), listener, getTag(tag));
     }
 
-    public RequestBody addParams(LinkedHashMap<String, String> params) {
-        FormEncodingBuilder formbuiBuilder = new FormEncodingBuilder();
-        if (params != null && params.size() > 0) {
-            for (String key : params.keySet()) {
-                formbuiBuilder.add(key, params.get(key));
-            }
-            return formbuiBuilder.build();
-        }
-        return null;
-    }
+//    public RequestBody addParams(LinkedHashMap<String, String> params) {
+//        FormEncodingBuilder formbuiBuilder = new FormEncodingBuilder();
+//        if (params != null && params.size() > 0) {
+//            for (String key : params.keySet()) {
+//                formbuiBuilder.add(key, params.get(key));
+//            }
+//            return formbuiBuilder.build();
+//        }
+//        return null;
+//    }
 
     public void addTag(Request.Builder builder, Object... tag) {
         if (tag != null && tag.length == 1) {
@@ -142,7 +144,6 @@ public class OKHttp implements HttpBase {
         return null;
     }
 
-    @Override
     public void cancel(Object... tag) {
         if (tag != null && tag.length == 1) {
             for (int i = 0; i < tag.length; i++) {

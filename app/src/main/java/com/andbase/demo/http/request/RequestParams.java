@@ -1,6 +1,7 @@
 package com.andbase.demo.http.request;
 
 import com.andbase.demo.http.body.FileBody;
+import com.andbase.tractor.utils.LogUtils;
 
 import java.io.File;
 import java.util.LinkedHashMap;
@@ -11,6 +12,7 @@ import java.util.LinkedHashMap;
 public class RequestParams {
     private String contentType = "application/x-www-form-urlencoded";
     private String charSet = "utf-8";
+    private String stringParams;
 
     private LinkedHashMap<String, Object> mParams;
     private LinkedHashMap<String, FileBody> mFileParams;
@@ -28,6 +30,14 @@ public class RequestParams {
      */
     public void addParams(String name, Object params) {
         mParams.put(name, params);
+    }
+
+    public String getStringParams() {
+        return stringParams;
+    }
+
+    public void setStringParams(String stringParams) {
+        this.stringParams = stringParams;
     }
 
     /**
@@ -92,6 +102,7 @@ public class RequestParams {
             }
             sb.append(set.getKey()).append("=").append(set.getValue());
         }
+        LogUtils.d("http params=" + sb.toString());
         return sb.toString();
     }
 }
