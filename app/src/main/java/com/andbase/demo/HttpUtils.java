@@ -60,9 +60,8 @@ public class HttpUtils {
         mHttpBase.request(builder.build(), listener, tag);
     }
 
-    public static void download(final String url, final String filePath, LinkedHashMap<String, String> header, long startposition, long endposition, final LoadListener listener, final Object... tag) {
-        get(url,header,null,listener,tag);
-//        mHttpBase.download(url, filePath + Util.getFilename(url), header, startposition,listener , tag);
+    public static void download(final String url, LinkedHashMap<String, String> header, final LoadListener listener, final Object... tag) {
+        get(url, header, null, listener, tag);
     }
 
     private static void addHeaders(HttpRequest.Builder builder, LinkedHashMap<String, String> headers) {
