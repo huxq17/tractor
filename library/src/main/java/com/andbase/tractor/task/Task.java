@@ -4,6 +4,7 @@ import android.text.TextUtils;
 
 import com.andbase.tractor.Constants.Constants;
 import com.andbase.tractor.handler.LoadHandler;
+import com.andbase.tractor.listener.LoadListener;
 import com.andbase.tractor.utils.HandlerUtils;
 import com.andbase.tractor.utils.LogUtils;
 
@@ -27,8 +28,8 @@ public abstract class Task implements Runnable {
 	 */
 	private TimeoutCountTask timeoutCountTask;
 
-	public Task(Object tag, LoadHandler handler) {
-		init(null, 0, tag, handler);
+	public Task(Object tag, LoadListener listener) {
+		init(null, 0, tag, listener);
 	}
 
 	public Task() {
@@ -39,8 +40,8 @@ public abstract class Task implements Runnable {
 		init(taskName, 0, null, null);
 	}
 
-	public Task(String taskName, Object tag, LoadHandler handler) {
-		init(taskName, 0, tag, handler);
+	public Task(String taskName, Object tag, LoadListener listener) {
+		init(taskName, 0, tag, listener);
 	}
 
 	public Task(long timeout) {
@@ -51,19 +52,19 @@ public abstract class Task implements Runnable {
 		init(taskName, timeout, null, null);
 	}
 
-	public Task(long timeout, Object tag, LoadHandler handler) {
-		init(null, timeout, tag, handler);
+	public Task(long timeout, Object tag, LoadListener listener) {
+		init(null, timeout, tag, listener);
 	}
 
-	public Task(String taskName, long timeout, Object tag, LoadHandler handler) {
-		init(taskName, timeout, tag, handler);
+	public Task(String taskName, long timeout, Object tag, LoadListener listener) {
+		init(taskName, timeout, tag, listener);
 	}
 
-	private void init(String name, long timeout, Object tag, LoadHandler handler) {
+	private void init(String name, long timeout, Object tag, LoadListener listener) {
 		setTaskName(name);
 		setTaskTimeout(timeout);
 		setTag(tag);
-		setHandler(handler);
+		setHandler(listener);
 	}
 
 	@Override
@@ -194,8 +195,10 @@ public abstract class Task implements Runnable {
 		return this;
 	}
 
-	public void setHandler(LoadHandler handler) {
-		mHandler = handler;
+	public void setHandler(LoadListener listener) {
+		if(listener!=null){
+			mHandler = new LoadHandler(listener);
+		}
 	}
 
 	public Object getTag() {

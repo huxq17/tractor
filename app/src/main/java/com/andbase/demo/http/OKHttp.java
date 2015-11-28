@@ -8,12 +8,10 @@ import com.andbase.demo.http.request.HttpHeader;
 import com.andbase.demo.http.request.HttpMethod;
 import com.andbase.demo.http.request.HttpRequest;
 import com.andbase.demo.http.request.RequestParams;
-import com.andbase.tractor.handler.LoadHandler;
 import com.andbase.tractor.listener.LoadListener;
 import com.andbase.tractor.task.Task;
 import com.andbase.tractor.task.TaskPool;
 import com.andbase.tractor.utils.LogUtils;
-import com.andbase.tractor.utils.Util;
 import com.squareup.okhttp.Call;
 import com.squareup.okhttp.Interceptor;
 import com.squareup.okhttp.MediaType;
@@ -22,14 +20,11 @@ import com.squareup.okhttp.Request;
 import com.squareup.okhttp.RequestBody;
 import com.squareup.okhttp.Response;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.RandomAccessFile;
 import java.net.CookieManager;
 import java.net.CookiePolicy;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.concurrent.TimeUnit;
 
 
@@ -85,7 +80,7 @@ public class OKHttp implements HttpBase {
         String params = requestParams.toString();
         String contentType = requestParams.getContentType();
         String charset = requestParams.getCharSet();
-        if(params==null|| TextUtils.isEmpty(contentType)||TextUtils.isEmpty(charset)){
+        if (params == null || TextUtils.isEmpty(contentType) || TextUtils.isEmpty(charset)) {
             throw new RuntimeException("params is null");
         }
         Request.Builder builder = getBuilder().url(url).post(RequestBody.create(MediaType.parse(contentType + ";" + charset), params));
@@ -95,15 +90,31 @@ public class OKHttp implements HttpBase {
     }
 
     @Override
-    public void request(HttpMethod method, HttpRequest request, LoadListener listener, Object tag) {
+    public void request(HttpRequest request, LoadListener listener, Object tag) {
         String url = request.getUrl();
         RequestParams requestParams = request.getRequestParams();
         HttpHeader header = request.getHeader();
         String params = requestParams.toString();
-
+        HttpMethod method = request.getMethod();
+        Request.Builder builder = getBuilder().url(url);
+        String contentType = requestParams.getContentType();
+        String charset = requestParams.getCharSet();
+        if (TextUtils.isEmpty(contentType) || TextUtils.isEmpty(charset)) {
+            throw new RuntimeException("contentType is empty || charset is empty");
+        }
+        if (!TextUtils.isEmpty(params)) {
+            builder.method(method.toString(), RequestBody.create(MediaType.parse(contentType + ";" + charset), params));
+        }
+        switch (method) {
+            case HEAD:
+                builder.head();
+                break;
+        }
+        addTag(builder, tag);
+        execute(builder.build(), listener, getTag(tag));
     }
 
-    private void addHeader(Request.Builder builder,HttpHeader header) {
+    private void addHeader(Request.Builder builder, HttpHeader header) {
         HashMap<String, String> headers = header.getHeaders();
         if (headers != null && headers.size() > 0) {
             for (HashMap.Entry<String, String> map :
@@ -111,13 +122,6 @@ public class OKHttp implements HttpBase {
                 builder.addHeader(map.getKey(), map.getValue());
             }
         }
-    }
-
-
-    public void header(String url, LoadListener listener, Object... tag) {
-        Request.Builder builder = getBuilder().url(url).head();
-        addTag(builder, tag);
-        executeHeader(builder.build(), listener, getTag(tag));
     }
 
 //    public RequestBody addParams(LinkedHashMap<String, String> params) {
@@ -158,107 +162,37 @@ public class OKHttp implements HttpBase {
 
     private void execute(final Request request,
                          final LoadListener listener, Object tag) {
-        final LoadHandler handler = new LoadHandler(listener);
         final Call call = mOkHttpClient.newCall(request);
-        Task netWorkTask = new Task(tag, handler) {
+        Task netWorkTask = new Task(tag, listener) {
             @Override
             public void onRun() {
                 try {
                     Response response = call.execute();
                     long length = response.body().contentLength();
                     String result = response.body().string();
-                    LogUtils.d("okresult=" + result + ";length=" + length);
-                    notifySuccess(result);
-                } catch (Exception e) {
-                    if (e.toString().toLowerCase().contains("canceled")
-                            || e.toString().toLowerCase().contains("closed")) {
-                        notifyCancel(e);
-                    } else {
-                        notifyFail(e);
-                    }
-                    e.printStackTrace();
-                }
-            }
-
-            @Override
-            public void cancelTask() {
-                call.cancel();
-            }
-        };
-        TaskPool.getInstance().execute(netWorkTask);
-    }
-
-    private void executeHeader(final Request request,
-                               final LoadListener listener, Object tag) {
-        final LoadHandler handler = new LoadHandler(listener);
-        final Call call = mOkHttpClient.newCall(request);
-        Task netWorkTask = new Task(tag, handler) {
-            @Override
-            public void onRun() {
-                try {
-                    Response response = call.execute();
-                    long length = response.body().contentLength();
-//                    String result = response.body().string();
-                    LogUtils.d("length=" + length);
-                    notifySuccess(length);
-                } catch (Exception e) {
-                    if (e.toString().toLowerCase().contains("canceled")
-                            || e.toString().toLowerCase().contains("closed")) {
-                        notifyCancel(e);
-                    } else {
-                        notifyFail(e);
-                    }
-                    e.printStackTrace();
-                }
-            }
-
-            @Override
-            public void cancelTask() {
-                call.cancel();
-            }
-        };
-        TaskPool.getInstance().execute(netWorkTask);
-    }
-
-    public void download(String url, final String filepath, LinkedHashMap<String, String> header, final long startposition, final LoadListener listener, Object tag) {
-        Request.Builder builder = getBuilder().url(url);
-        if (header != null) {
-            for (LinkedHashMap.Entry<String, String> entry : header.entrySet()) {
-                builder.addHeader(entry.getKey(), entry.getValue());
-            }
-        }
-        addTag(builder, tag);
-        final LoadHandler handler = new LoadHandler(listener);
-        final Call call = mOkHttpClient.newCall(builder.build());
-        TaskPool.getInstance().execute(new Task(tag, handler) {
-            @Override
-            public void onRun() {
-                try {
-                    Response response = call.execute();
                     InputStream inStream = response.body().byteStream();
-                    File saveFile = new File(filepath);
-                    RandomAccessFile accessFile = new RandomAccessFile(saveFile, "rwd");
-                    accessFile.seek(startposition);// 设置从什么位置开始写入数据
-
-                    byte[] buffer = new byte[1024];
-                    int len = 0;
-                    int total = 0;
-                    while ((len = inStream.read(buffer)) != -1) {
-                        accessFile.write(buffer, 0, len);
-                        total += len;
-                        // 实时更新进度
-                        notifyLoading(len);
-                    }
-                    Util.closeAll(inStream, accessFile);
+                    HttpResponse httpResponse = new HttpResponse();
+                    httpResponse.setContentLength(length);
+                    httpResponse.setInputStream(inStream);
+                    httpResponse.setString(result);
+                    LogUtils.d("okresult=" + result + ";length=" + length);
+                    notifySuccess(httpResponse);
                 } catch (Exception e) {
+                    if (e.toString().toLowerCase().contains("canceled")
+                            || e.toString().toLowerCase().contains("closed")) {
+                        notifyCancel(e);
+                    } else {
+                        notifyFail(e);
+                    }
                     e.printStackTrace();
                 }
             }
 
             @Override
             public void cancelTask() {
-
+                call.cancel();
             }
-        });
+        };
+        TaskPool.getInstance().execute(netWorkTask);
     }
 }

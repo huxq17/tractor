@@ -1,6 +1,7 @@
 package com.andbase.demo.http.request;
 
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 
 public final class HttpHeader {
     private HashMap<String, String> mHeader;
@@ -14,6 +15,9 @@ public final class HttpHeader {
      */
     public void addHeader(String name,String value){
        mHeader.put(name,value);
+    }
+    public void setHeader(LinkedHashMap<String,String> header){
+        this.mHeader = header;
     }
 
     public void removeHeader(String name){

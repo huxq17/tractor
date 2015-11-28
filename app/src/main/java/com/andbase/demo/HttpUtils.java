@@ -4,16 +4,10 @@ import android.text.TextUtils;
 
 import com.andbase.demo.http.HttpBase;
 import com.andbase.demo.http.OKHttp;
-import com.andbase.demo.http.request.HttpHeader;
+import com.andbase.demo.http.request.HttpMethod;
 import com.andbase.demo.http.request.HttpRequest;
-import com.andbase.demo.http.request.RequestParams;
 import com.andbase.tractor.listener.LoadListener;
-import com.andbase.tractor.listener.impl.LoadListenerImpl;
-import com.andbase.tractor.utils.LogUtils;
-import com.andbase.tractor.utils.Util;
 
-import java.io.File;
-import java.io.RandomAccessFile;
 import java.util.LinkedHashMap;
 
 /**
@@ -28,72 +22,52 @@ public class HttpUtils {
                             final LoadListener listener, Object... tag) {
         HttpRequest.Builder builder = new HttpRequest.Builder();
         builder.url(url);
-        if (headers != null && headers.size() > 0) {
-            for (LinkedHashMap.Entry<String, String> header : headers.entrySet()
-                    ) {
-                builder.addHeader(header.getKey(), header.getValue());
-            }
-        }
-        builder.setStringParams(params).contentType("application/x-www-form-urlencoded").charSet("utf-8");
+        addHeaders(builder, headers);
+        builder.setStringParams(params);
+        //如无特殊需求，这步可以省去
+        builder.contentType("application/x-www-form-urlencoded").charSet("utf-8");
         HttpRequest request = builder.build();
         mHttpBase.post(request, listener, tag);
     }
 
-    public static void get(String url, final String params,
+    public static void post(final String url,
+                            LinkedHashMap<String, String> headers, LinkedHashMap<String, Object> params,
+                            LoadListener listener, Object... tag) {
+        HttpRequest.Builder builder = new HttpRequest.Builder();
+        builder.url(url);
+        addHeaders(builder, headers);
+        builder.setParams(params);
+        //如无特殊需求，这步可以省去
+        builder.contentType("application/x-www-form-urlencoded").charSet("utf-8");
+        HttpRequest request = builder.build();
+        mHttpBase.post(request, listener, tag);
+    }
+
+    public static void get(String url, LinkedHashMap<String, String> headers, final String params,
                            final LoadListener listener, Object... tag) {
         if (!TextUtils.isEmpty(params)) {
             url = url + "?" + params;
         }
-//         mHttpBase.get(url, listener, tag);
+        HttpRequest.Builder builder = new HttpRequest.Builder();
+        builder.url(url);
+        addHeaders(builder, headers);
+        mHttpBase.get(builder.build(), listener, tag);
     }
 
-    static int completed = 0;
+    public static void header(final String url, final String filePath, final int threadNum, final LoadListener listener, final Object... tag) {
+        HttpRequest.Builder builder = new HttpRequest.Builder();
+        builder.url(url).method(HttpMethod.HEAD);
+        mHttpBase.request(builder.build(), listener, tag);
+    }
 
-    public static void download(final String url, final String filePath, final int threadNum, final LoadListener listener, final Object... tag) {
-        mHttpBase.header(url, new LoadListenerImpl() {
-            @Override
-            public void onSuccess(Object result) {
-                super.onSuccess(result);
-                final long filelength = (long) result;
-                String sdcardPath = Util.getSdcardPath();
-                if (TextUtils.isEmpty(sdcardPath)) {
-                    listener.onFail("没有sd卡");
-                    return;
-                }
-                File file = new File(filePath);
-                if (!file.exists()) {
-                    file.mkdirs();
-                }
-                File saveFile = new File(filePath + Util.getFilename(url));
-                ;
-                LogUtils.i("saveFile=" + filePath + Util.getFilename(url));
-                RandomAccessFile accessFile = null;
-                try {
-                    accessFile = new RandomAccessFile(saveFile, "rwd");
-                    accessFile.setLength(filelength);// 设置本地文件的长度和下载文件相同
-                    Util.closeQuietly(accessFile);
-                    long block = filelength % threadNum == 0 ? filelength / threadNum
-                            : filelength / threadNum + 1;
-                    for (int i = 0; i < threadNum; i++) {
-                        long startposition = i * block;
-                        long endposition = (i + 1) * block - 1;
-                        LinkedHashMap<String, String> header = new LinkedHashMap<>();
-                        header.put("RANGE", "bytes=" + startposition + "-"
-                                + endposition);
-                        mHttpBase.download(url, filePath + Util.getFilename(url), header, startposition, new LoadListenerImpl() {
-                            @Override
-                            public void onLoading(Object result) {
-                                super.onLoading(result);
-                                int process = (int) result;
-                                completed += process;
-                                LogUtils.i("process = " + (1.0f * completed / filelength));
-                            }
-                        }, tag);
-                    }
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }
-        }, tag);
+    public static void download(final String url, final String filePath, LinkedHashMap<String, String> header, long startposition, long endposition, final LoadListener listener, final Object... tag) {
+        get(url,header,null,listener,tag);
+//        mHttpBase.download(url, filePath + Util.getFilename(url), header, startposition,listener , tag);
+    }
+
+    private static void addHeaders(HttpRequest.Builder builder, LinkedHashMap<String, String> headers) {
+        if (headers != null && headers.size() > 0) {
+            builder.setHeader(headers);
+        }
     }
 }

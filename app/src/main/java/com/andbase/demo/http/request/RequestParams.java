@@ -1,5 +1,7 @@
 package com.andbase.demo.http.request;
 
+import android.text.TextUtils;
+
 import com.andbase.demo.http.body.FileBody;
 import com.andbase.tractor.utils.LogUtils;
 
@@ -30,6 +32,9 @@ public class RequestParams {
      */
     public void addParams(String name, Object params) {
         mParams.put(name, params);
+    }
+    public void setParams(LinkedHashMap<String,Object> params){
+        mParams = params;
     }
 
     public String getStringParams() {
@@ -94,6 +99,9 @@ public class RequestParams {
 
     @Override
     public String toString() {
+        if(!TextUtils.isEmpty(stringParams)){
+            return stringParams;
+        }
         StringBuilder sb = new StringBuilder();
         for (LinkedHashMap.Entry set :
                 mParams.entrySet()) {

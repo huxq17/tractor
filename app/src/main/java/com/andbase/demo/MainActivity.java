@@ -6,13 +6,19 @@ import android.text.TextUtils;
 import android.view.View;
 
 import com.andbase.demo.base.BaseActivity;
-import com.andbase.tractor.handler.LoadHandler;
+import com.andbase.demo.http.HttpResponse;
 import com.andbase.tractor.listener.LoadListener;
 import com.andbase.tractor.listener.impl.LoadListenerImpl;
 import com.andbase.tractor.task.Task;
 import com.andbase.tractor.task.TaskPool;
+import com.andbase.tractor.utils.LogUtils;
 import com.andbase.tractor.utils.Util;
 
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.RandomAccessFile;
+import java.util.LinkedHashMap;
 import java.util.Random;
 
 /**
@@ -20,6 +26,7 @@ import java.util.Random;
  */
 public class MainActivity extends BaseActivity {
     private String downloadUrl = "https://github.com/huxq17/okhttp-utils/blob/master/gson-2.2.1.jar?raw=true";
+    int completed = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -122,8 +129,8 @@ public class MainActivity extends BaseActivity {
                     @Override
                     public void onSuccess(Object result) {
                         super.onSuccess(result);
-                        String response = (String) result;
-                        toast(response);
+                        HttpResponse response = (HttpResponse) result;
+                        toast(response.string());
                     }
 
                     @Override
@@ -146,11 +153,94 @@ public class MainActivity extends BaseActivity {
                     toast("没有sd卡");
                     return;
                 }
-                HttpUtils.download(downloadUrl, sdcardPath + "/tractor/download/" , 3, new LoadListenerImpl() {
+                final String filePath = sdcardPath + "/tractor/download/";
+                final int threadNum = 3;
+                requestHeader(downloadUrl, filePath, threadNum, new LoadListenerImpl() {
 
                 }, this);
                 break;
         }
+    }
+
+    private void requestHeader(final String url, final String filePath, final int threadNum, final LoadListener listener, final Object... tag) {
+        HttpUtils.header(downloadUrl, filePath, threadNum, new LoadListenerImpl() {
+            @Override
+            public void onSuccess(Object result) {
+                super.onSuccess(result);
+                HttpResponse response = (HttpResponse) result;
+                final long filelength = response.getContentLength();
+                String sdcardPath = Util.getSdcardPath();
+                if (TextUtils.isEmpty(sdcardPath)) {
+                    listener.onFail("没有sd卡");
+                    return;
+                }
+                File file = new File(filePath);
+                if (!file.exists()) {
+                    file.mkdirs();
+                }
+                File saveFile = new File(filePath + Util.getFilename(url));
+                ;
+                LogUtils.i("saveFile=" + filePath + Util.getFilename(url));
+                RandomAccessFile accessFile = null;
+                try {
+                    accessFile = new RandomAccessFile(saveFile, "rwd");
+                    accessFile.setLength(filelength);// 设置本地文件的长度和下载文件相同
+                    Util.closeQuietly(accessFile);
+                    long block = filelength % threadNum == 0 ? filelength / threadNum
+                            : filelength / threadNum + 1;
+                    for (int i = 0; i < threadNum; i++) {
+                       final long startposition = i * block;
+                       final long endposition = (i + 1) * block - 1;
+                        LinkedHashMap<String, String> header = new LinkedHashMap<>();
+                        header.put("RANGE", "bytes=" + startposition + "-"
+                                + endposition);
+                        final String filepath = sdcardPath + "/tractor/download/";
+                        HttpUtils.download(downloadUrl, filepath, header, startposition, endposition, new LoadListenerImpl() {
+                            @Override
+                            public void onSuccess(Object result) {
+                                super.onSuccess(result);
+                                HttpResponse httpResponse = (HttpResponse) result;
+                                InputStream inStream = httpResponse.getInputStream();
+                                RandomAccessFile accessFile = null;
+                                try{
+                                    File saveFile = new File(filepath);
+                                    accessFile = new RandomAccessFile(saveFile, "rwd");
+                                    accessFile.seek(startposition);// 设置从什么位置开始写入数据
+
+                                    byte[] buffer = new byte[1024];
+                                    int len = 0;
+                                    int total = 0;
+                                    while ((len = inStream.read(buffer)) != -1) {
+                                        accessFile.write(buffer, 0, len);
+                                        total += len;
+                                        // 实时更新进度
+                                       listener.onLoading(len);
+                                    }
+                                }catch (Exception e){
+
+                                }finally {
+                                    try {
+                                        Util.closeAll(inStream, accessFile);
+                                    } catch (IOException e) {
+                                        e.printStackTrace();
+                                    }
+                                }
+                            }
+
+                            @Override
+                            public void onLoading(Object result) {
+                                super.onLoading(result);
+                                int process = (int) result;
+                                completed += process;
+                                LogUtils.i("process = " + (1.0f * completed / filelength));
+                            }
+                        }, this);
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }, this);
     }
 
     /**
@@ -160,9 +250,7 @@ public class MainActivity extends BaseActivity {
      * @param tag
      */
     public void doNormalTask(LoadListener listener, Object tag) {
-        //先拿到handler，如果不做这步，new Task()，Task构造函数就不需要传参数了
-        LoadHandler handler = new LoadHandler(listener);
-        TaskPool.getInstance().execute(new Task(tag, handler) {
+        TaskPool.getInstance().execute(new Task(tag, listener) {
             @Override
             public void onRun() {
                 SystemClock.sleep(500);
@@ -188,14 +276,12 @@ public class MainActivity extends BaseActivity {
     }
 
     /**
-     *
-     * @param timeout 设置任务的timeout
+     * @param timeout  设置任务的timeout
      * @param listener
      * @param tag
      */
     public void doTimeoutTask(long timeout, LoadListener listener, Object tag) {
-        LoadHandler handler = new LoadHandler(listener);
-        TaskPool.getInstance().execute(new Task(timeout, tag, handler) {
+        TaskPool.getInstance().execute(new Task(timeout, tag, listener) {
             @Override
             public void onRun() {
                 SystemClock.sleep(1000);
@@ -209,11 +295,11 @@ public class MainActivity extends BaseActivity {
     }
 
     public void doNormalGet(String url, String params, LoadListener listener, Object tag) {
-        HttpUtils.get(url, params, listener, tag);
+        HttpUtils.get(url, null, params, listener, tag);
     }
 
     public void doNormalPost(String url, String params, LoadListener listener, Object tag) {
-        HttpUtils.post(url, params, listener, tag);
+        HttpUtils.post(url, null, params, listener, tag);
     }
 
     @Override

@@ -1,6 +1,7 @@
 package com.andbase.demo.http.request;
 
 import java.io.File;
+import java.util.LinkedHashMap;
 
 /**
  * Created by huxq17 on 2015/11/24.
@@ -51,16 +52,12 @@ public class HttpRequest {
             return this;
         }
 
-        public Builder setHeader(HttpHeader header) {
-            if (header == null) {
-                throw new RuntimeException("header==null");
-            }
-            this.header = header;
-            return this;
-        }
-
         public Builder addHeader(String name, String value) {
             header.addHeader(name, value);
+            return this;
+        }
+        public Builder setHeader(LinkedHashMap<String,String> header){
+            this.header.setHeader(header);
             return this;
         }
 
@@ -69,16 +66,17 @@ public class HttpRequest {
             return this;
         }
 
-        public Builder setParams(RequestParams params) {
+        public Builder setParams(LinkedHashMap<String,Object> params) {
             if (params == null) {
                 throw new RuntimeException("params==null");
             }
-            this.requestParams = params;
+            this.requestParams.setParams(params);
             return this;
         }
 
         public Builder setStringParams(String params) {
             requestParams.setStringParams(params);
+            return this;
         }
 
         public Builder contentType(String contentType) {

@@ -1,6 +1,5 @@
 package com.andbase.demo.http;
 
-import com.andbase.demo.http.request.HttpMethod;
 import com.andbase.demo.http.request.HttpRequest;
 import com.andbase.tractor.listener.LoadListener;
 
@@ -27,12 +26,11 @@ public interface HttpBase {
     public void post(HttpRequest request, LoadListener listener, Object tag);
 
     /**
-     * post请求
+     * get post以外的其他请求
      *
-     * @param method  请求方法
      * @param request http请求
      * @param listener 监听
      * @param tag
      */
-    public void request(HttpMethod method, HttpRequest request, LoadListener listener, Object tag);
+    public void request(HttpRequest request, LoadListener listener, Object tag);
 }

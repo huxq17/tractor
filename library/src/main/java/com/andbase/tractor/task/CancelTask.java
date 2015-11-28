@@ -1,13 +1,13 @@
 package com.andbase.tractor.task;
 
-import com.andbase.tractor.handler.LoadHandler;
+import com.andbase.tractor.listener.LoadListener;
 
 public class CancelTask extends Task {
     private Task mTask;
 
 
-    public CancelTask(Task task,LoadHandler handler) {
-        super(null, handler);
+    public CancelTask(Task task,LoadListener listener) {
+        super(null, listener);
         mTask = task;
     }
 
