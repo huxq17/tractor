@@ -169,8 +169,8 @@ public class OKHttp implements HttpBase {
                 try {
                     Response response = call.execute();
 
-                    long length = 0;
-                    String result = "";
+                    long length = response.body().contentLength();
+                    String result = response.body().string();
                     InputStream inStream = response.body().byteStream();
 
                     HttpResponse httpResponse = new HttpResponse();
