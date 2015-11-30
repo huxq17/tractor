@@ -174,10 +174,7 @@ public class OKHttp implements HttpBase {
                     InputStream inStream = response.body().byteStream();
 
                     HttpResponse httpResponse = new HttpResponse();
-                    httpResponse.setContentLength(length);
-                    httpResponse.setInputStream(inStream);
-                    httpResponse.setString(result);
-                    LogUtils.d("okresult=" + result + ";length=" + length);
+                    httpResponse.setResponseBody(response.body());
                     notifySuccess(httpResponse);
                 } catch (Exception e) {
                     if (e.toString().toLowerCase().contains("canceled")

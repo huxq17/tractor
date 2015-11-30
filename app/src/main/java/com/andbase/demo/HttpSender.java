@@ -13,7 +13,7 @@ import java.util.LinkedHashMap;
 /**
  * Created by Administrator on 2015/11/16.
  */
-public class HttpUtils {
+public class HttpSender {
     static HttpBase mHttpBase = new OKHttp();
 
 

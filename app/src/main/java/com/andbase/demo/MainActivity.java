@@ -204,7 +204,7 @@ public class MainActivity extends BaseActivity {
     }
 
     private void requestHeader(final String url, final String filePath, final int threadNum, final LoadListener listener, final Object... tag) {
-        HttpUtils.header(downloadUrl, filePath, threadNum, new LoadListenerImpl() {
+        HttpSender.header(downloadUrl, filePath, threadNum, new LoadListenerImpl() {
             @Override
             public void onSuccess(Object result) {
                 super.onSuccess(result);
@@ -215,7 +215,7 @@ public class MainActivity extends BaseActivity {
                     listener.onFail("没有sd卡");
                     return;
                 }
-                File saveFile = new File(filePath,  Util.getFilename(url));
+                File saveFile = new File(filePath, Util.getFilename(url));
                 LogUtils.i("saveFile=" + saveFile.getAbsolutePath());
                 RandomAccessFile accessFile = null;
                 try {
@@ -231,12 +231,12 @@ public class MainActivity extends BaseActivity {
                         header.put("RANGE", "bytes=" + startposition + "-"
                                 + endposition);
                         final String filepath = saveFile.getAbsolutePath();
-                        HttpUtils.download(downloadUrl, header, new LoadListenerImpl() {
+                        HttpSender.download(downloadUrl, header, new LoadListenerImpl() {
                             @Override
                             public void onSuccess(Object result) {
                                 super.onSuccess(result);
                                 final HttpResponse httpResponse = (HttpResponse) result;
-                                TaskPool.getInstance().execute(new Task(MainActivity.this,new LoadListenerImpl(){
+                                TaskPool.getInstance().execute(new Task(MainActivity.this, new LoadListenerImpl() {
                                     @Override
                                     public void onLoading(Object result) {
                                         super.onLoading(result);
@@ -248,7 +248,7 @@ public class MainActivity extends BaseActivity {
                                         InputStream inStream = httpResponse.getInputStream();
                                         RandomAccessFile accessFile = null;
                                         try {
-                                            LogUtils.i("onsucess="+filepath);
+                                            LogUtils.i("onsucess=" + filepath);
                                             File saveFile = new File(filepath);
                                             accessFile = new RandomAccessFile(saveFile, "rwd");
                                             accessFile.seek(startposition);// 设置从什么位置开始写入数据
@@ -339,11 +339,11 @@ public class MainActivity extends BaseActivity {
     }
 
     public void doNormalGet(String url, String params, LoadListener listener, Object tag) {
-        HttpUtils.get(url, null, params, listener, tag);
+        HttpSender.get(url, null, params, listener, tag);
     }
 
     public void doNormalPost(String url, String params, LoadListener listener, Object tag) {
-        HttpUtils.post(url, null, params, listener, tag);
+        HttpSender.post(url, null, params, listener, tag);
     }
 
     @Override
