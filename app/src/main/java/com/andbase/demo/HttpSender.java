@@ -8,6 +8,7 @@ import com.andbase.demo.http.request.HttpMethod;
 import com.andbase.demo.http.request.HttpRequest;
 import com.andbase.demo.http.response.HttpResponse;
 import com.andbase.tractor.listener.LoadListener;
+import com.andbase.tractor.listener.impl.LoadListenerImpl;
 import com.andbase.tractor.task.Task;
 import com.andbase.tractor.task.TaskPool;
 import com.andbase.tractor.utils.LogUtils;
@@ -102,63 +103,66 @@ public class HttpSender {
      * @param listener
      * @param tag
      */
-    public static void download(final String url, final String fileDir, final String fileName, final int threadNum, final LoadListener listener, final Object tag) {
-        TaskPool.getInstance().execute(new Task(tag, listener) {
+    public static void download(final String url, long filelength, final String fileDir, final String fileName, final int threadNum, final LoadListener listener, final Object tag) {
+        setFileLength(fileDir, fileName, filelength);
+        long block = filelength % threadNum == 0 ? filelength / threadNum
+                : filelength / threadNum + 1;
+        String filepath = fileDir + fileName;
+        listener.onStart();
+        LogUtils.i("");
+        for (int i = 0; i < threadNum; i++) {
+            doDownload(url, i, filepath, block, listener, tag);
+        }
+    }
+
+    public static void doDownload(final String url, final int i, final String filepath, final long block, final LoadListener listener, final Object tag) {
+        TaskPool.getInstance().execute(new Task(tag, new LoadListenerImpl() {
+            @Override
+            public void onLoading(Object result) {
+                super.onLoading(result);
+                listener.onLoading(result);
+            }
+        }) {
             @Override
             public void onRun() {
-                HttpResponse response = headerSync(url, tag);
-                long filelength = 0;
-                if (response != null) {
-                    filelength = response.getContentLength();
+                final long startposition = i * block;
+                final long endposition = (i + 1) * block - 1;
+                LogUtils.d("startposition=" + startposition + ";endposition=" + endposition);
+                LinkedHashMap<String, String> header = new LinkedHashMap<>();
+                header.put("RANGE", "bytes=" + startposition + "-"
+                        + endposition);
+                HttpResponse downloadResponse = getSync(url, header, null, null, tag);
+                InputStream inStream = null;
+                if (downloadResponse != null) {
+                    inStream = downloadResponse.getInputStream();
                 } else {
-                    notifyFail("HEAD请求没有成功，获取文件大小失败");
+                    notifyFail("获取网络文件返回输入流失败");
                     return;
                 }
-                setFileLength(fileDir, fileName, filelength);
-                long block = filelength % threadNum == 0 ? filelength / threadNum
-                        : filelength / threadNum + 1;
-                for (int i = 0; i < threadNum; i++) {
-                    final long startposition = i * block;
-                    final long endposition = (i + 1) * block - 1;
-                    LinkedHashMap<String, String> header = new LinkedHashMap<>();
-                    header.put("RANGE", "bytes=" + startposition + "-"
-                            + endposition);
-                    final String filepath = fileDir + fileName;
-                    HttpResponse downloadResponse = getSync(url, header, null, null, tag);
-                    InputStream inStream = null;
-                    if (downloadResponse != null) {
-                        inStream = downloadResponse.getInputStream();
-                    } else {
-                        notifyFail("获取网络文件返回输入流失败");
-                        return;
-                    }
-                    RandomAccessFile accessFile = null;
-                    try {
-                        LogUtils.i("onsucess=" + filepath);
-                        File saveFile = new File(filepath);
-                        accessFile = new RandomAccessFile(saveFile, "rwd");
-                        accessFile.seek(startposition);// 设置从什么位置开始写入数据
+                RandomAccessFile accessFile = null;
+                try {
+                    File saveFile = new File(filepath);
+                    accessFile = new RandomAccessFile(saveFile, "rwd");
+                    accessFile.seek(startposition);// 设置从什么位置开始写入数据
 
-                        byte[] buffer = new byte[1024];
-                        int len = 0;
-                        int total = 0;
-                        while ((len = inStream.read(buffer)) != -1) {
-                            accessFile.write(buffer, 0, len);
+                    byte[] buffer = new byte[2048];
+                    int len = 0;
+                    int total = 0;
+                    while ((len = inStream.read(buffer)) != -1) {
+                        accessFile.write(buffer, 0, len);
+                        total += len;
+                        // 实时更新进度
+                        synchronized (HttpSender.class) {
                             total += len;
-                            // 实时更新进度
-                            synchronized (HttpSender.class) {
-                                total += len;
-                                notifyLoading((int) (100 * (1.0f * total / filelength)));
-                            }
+                            notifyLoading(len);
                         }
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    } finally {
-                        Util.closeQuietly(inStream);
-                        Util.closeQuietly(accessFile);
                     }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                } finally {
+                    Util.closeQuietly(inStream);
+                    Util.closeQuietly(accessFile);
                 }
-
             }
 
             @Override
@@ -166,6 +170,7 @@ public class HttpSender {
 
             }
         });
+
     }
 
     public static void setFileLength(final String fileDir, final String fileName, long filelength) {

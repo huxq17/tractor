@@ -21,12 +21,13 @@ import com.andbase.tractor.utils.Util;
 import java.util.Random;
 
 /**
- * Created by Administrator on 2015/11/16.
+ * Created by huxq17 on 2015/11/16.
  */
 public class MainActivity extends BaseActivity {
-    private String downloadUrl = "https://github.com/huxq17/okhttp-utils/blob/master/gson-2.2.1.jar?raw=true";
+    private String downloadUrl = "http://192.168.2.199:8080/test/game.apk";
     int completed = 0;
     long filelength = 0;
+    long done = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -182,47 +183,67 @@ public class MainActivity extends BaseActivity {
                     toast("没有sd卡");
                     return;
                 }
-                String filedir = sdcardPath + "/tractor/down";
+                final String filedir = sdcardPath + "/tractor/down/";
                 LogUtils.i("filedir =" + filedir);
-                String filename = Util.getFilename(downloadUrl);
-                int threadNum = 3;
-                download(downloadUrl, filedir, filename, threadNum, new LoadListenerImpl(this) {
+                final String filename = Util.getFilename(downloadUrl);
+                final int threadNum = 3;
+                done=0;
+                HttpSender.header(downloadUrl, new LoadListenerImpl() {
                     @Override
-                    public void onStart() {
-                        super.onStart();
-                        setMessage("获取文件信息...");
-                    }
+                    public void onSuccess(Object result) {
+                        super.onSuccess(result);
+                        HttpResponse response = (HttpResponse) result;
+                        if (response != null) {
+                            filelength = response.getContentLength();
+                            download(downloadUrl, filelength, filedir, filename, threadNum, new LoadListenerImpl(MainActivity.this) {
 
-                    @Override
-                    public void onLoading(Object result) {
-                        super.onLoading(result);
-                        int process = (int) result;
-                        setMessage("已下载 " + process + "%");
+                                @Override
+                                public void onLoading(Object result) {
+                                    super.onLoading(result);
+                                    int process = (int) result;
+                                    done += process;
+                                    LogUtils.d("done=" + done + ";filelength=" + filelength);
+                                    setMessage("已下载 " + (int) (100 * (1.0f * done / filelength)) + "%");
+                                    if (done == filelength){
+                                        onSuccess(null);
+                                    }
+                                }
+
+                                @Override
+                                public void onFail(Object result) {
+                                    super.onFail(result);
+                                    String response = (String) result;
+                                    if (TextUtils.isEmpty(response)) {
+                                        response = "下载失败";
+                                    }
+                                    setMessage(response);
+                                }
+
+                                @Override
+                                public void onSuccess(Object result) {
+                                    super.onSuccess(result);
+                                    setMessage("下载成功");
+                                }
+
+                            }, this);
+                        } else {
+                            toast("获取网络文件长度失败");
+                        }
                     }
 
                     @Override
                     public void onFail(Object result) {
                         super.onFail(result);
-                        String response = (String) result;
-                        if (TextUtils.isEmpty(response)) {
-                            response = "下载失败";
-                        }
-                        setMessage(response);
+                        toast("获取网络文件长度失败");
                     }
-
-                    @Override
-                    public void onSuccess(Object result) {
-                        super.onSuccess(result);
-                        setMessage("下载成功");
-                    }
-
                 }, this);
+
                 break;
         }
     }
 
-    private void download(String downloadUrl, String filePath, String filename, int threadNum, LoadListenerImpl loadListener, Object tag) {
-        HttpSender.download(downloadUrl, filePath, filename, threadNum, loadListener, tag);
+    private void download(String downloadUrl, long filelength, String filePath, String filename, int threadNum, LoadListenerImpl loadListener, Object tag) {
+        HttpSender.download(downloadUrl, filelength, filePath, filename, threadNum, loadListener, tag);
     }
 
 
