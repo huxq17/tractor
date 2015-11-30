@@ -110,12 +110,15 @@ public class HttpSender {
         String filepath = fileDir + fileName;
         listener.onStart();
         LogUtils.i("");
+        int freeMemory = ((int) Runtime.getRuntime().freeMemory());// 获取应用剩余可用内存
+        int allocated = freeMemory / threadNum / 2;//给每个线程分配的内存
+        LogUtils.i("spendTime allocated = "+allocated);
         for (int i = 0; i < threadNum; i++) {
-            doDownload(url, i, filepath, block, listener, tag);
+            doDownload(url, allocated, i, filepath, block, listener, tag);
         }
     }
 
-    public static void doDownload(final String url, final int i, final String filepath, final long block, final LoadListener listener, final Object tag) {
+    public static void doDownload(final String url, final int allocated, final int i, final String filepath, final long block, final LoadListener listener, final Object tag) {
         TaskPool.getInstance().execute(new Task(tag, new LoadListenerImpl() {
             @Override
             public void onLoading(Object result) {
@@ -145,7 +148,8 @@ public class HttpSender {
                     accessFile = new RandomAccessFile(saveFile, "rwd");
                     accessFile.seek(startposition);// 设置从什么位置开始写入数据
 
-                    byte[] buffer = new byte[2048];
+                    byte[] buffer = new byte[allocated];
+//                    byte[] buffer = new byte[1024];
                     int len = 0;
                     int total = 0;
                     while ((len = inStream.read(buffer)) != -1) {
@@ -181,6 +185,9 @@ public class HttpSender {
         RandomAccessFile accessFile = null;
         try {
             File downloadFile = new File(fileDir, fileName);
+            if (downloadFile.exists()) {
+                downloadFile.delete();
+            }
             accessFile = new RandomAccessFile(downloadFile, "rwd");
             accessFile.setLength(filelength);// 设置本地文件的长度和下载文件相同
             accessFile.close();

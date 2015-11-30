@@ -37,6 +37,7 @@ public class OKHttp implements HttpBase {
     private static final OkHttpClient mOkHttpClient = new OkHttpClient();
 
     static {
+        mOkHttpClient.setRetryOnConnectionFailure(true);
         mOkHttpClient.setConnectTimeout(30, TimeUnit.SECONDS);
         mOkHttpClient.networkInterceptors().add(new RedirectInterceptor());
         int versionCode = Build.VERSION.SDK_INT;
@@ -62,7 +63,7 @@ public class OKHttp implements HttpBase {
         HttpHeader header = request.getHeader();
         boolean synchron = request.isSynchron();
         String params = requestParams.toString();
-        if (TextUtils.isEmpty(params)) {
+        if (!TextUtils.isEmpty(params)) {
             url += "?" + params;
         }
         LogUtils.d("get url=" + url);

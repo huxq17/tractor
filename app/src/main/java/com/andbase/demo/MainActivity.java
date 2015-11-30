@@ -18,13 +18,14 @@ import com.andbase.tractor.task.TaskPool;
 import com.andbase.tractor.utils.LogUtils;
 import com.andbase.tractor.utils.Util;
 
+import java.io.File;
 import java.util.Random;
 
 /**
  * Created by huxq17 on 2015/11/16.
  */
 public class MainActivity extends BaseActivity {
-    private String downloadUrl = "http://192.168.2.199:8080/test/game.apk";
+    private String downloadUrl = "http://192.168.2.103:8080/test/firetweet.apk";
     int completed = 0;
     long filelength = 0;
     long done = 0;
@@ -195,6 +196,7 @@ public class MainActivity extends BaseActivity {
                         HttpResponse response = (HttpResponse) result;
                         if (response != null) {
                             filelength = response.getContentLength();
+                            final long starttime = System.currentTimeMillis();
                             download(downloadUrl, filelength, filedir, filename, threadNum, new LoadListenerImpl(MainActivity.this) {
 
                                 @Override
@@ -222,7 +224,12 @@ public class MainActivity extends BaseActivity {
                                 @Override
                                 public void onSuccess(Object result) {
                                     super.onSuccess(result);
-                                    setMessage("下载成功");
+                                    long spend = System.currentTimeMillis()-starttime;
+                                    LogUtils.i("memory spendTime="+spend);
+                                    setMessage("下载成功;" + "spendTime="+spend);
+                                    File file = new File(filedir,filename);
+                                    String filePath = filedir+filename;
+                                    Utils.install(MainActivity.this,filePath);
                                 }
 
                             }, this);
@@ -242,10 +249,9 @@ public class MainActivity extends BaseActivity {
         }
     }
 
-    private void download(String downloadUrl, long filelength, String filePath, String filename, int threadNum, LoadListenerImpl loadListener, Object tag) {
+    private void download(String downloadUrl, long filelength, String filePath, String filename, int threadNum, LoadListener loadListener, Object tag) {
         HttpSender.download(downloadUrl, filelength, filePath, filename, threadNum, loadListener, tag);
     }
-
 
     /**
      * 发起个普通的任务
