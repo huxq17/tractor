@@ -1,4 +1,4 @@
-package com.andbase.demo.http;
+package com.andbase.demo.http.response;
 
 import com.andbase.tractor.utils.LogUtils;
 import com.squareup.okhttp.ResponseBody;

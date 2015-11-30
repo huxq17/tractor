@@ -8,6 +8,7 @@ import com.andbase.demo.http.request.HttpHeader;
 import com.andbase.demo.http.request.HttpMethod;
 import com.andbase.demo.http.request.HttpRequest;
 import com.andbase.demo.http.request.RequestParams;
+import com.andbase.demo.http.response.HttpResponse;
 import com.andbase.tractor.listener.LoadListener;
 import com.andbase.tractor.task.Task;
 import com.andbase.tractor.task.TaskPool;
@@ -21,7 +22,6 @@ import com.squareup.okhttp.RequestBody;
 import com.squareup.okhttp.Response;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.CookieManager;
 import java.net.CookiePolicy;
 import java.util.HashMap;
@@ -56,10 +56,11 @@ public class OKHttp implements HttpBase {
     }
 
     @Override
-    public void get(HttpRequest request, LoadListener listener, Object tag) {
+    public HttpResponse get(HttpRequest request, LoadListener listener, Object... tag) {
         String url = request.getUrl();
         RequestParams requestParams = request.getRequestParams();
         HttpHeader header = request.getHeader();
+        boolean synchron = request.isSynchron();
         String params = requestParams.toString();
         if (TextUtils.isEmpty(params)) {
             url += "?" + params;
@@ -69,14 +70,16 @@ public class OKHttp implements HttpBase {
         Request.Builder builder = getBuilder().url(url);
         addHeader(builder, header);
         addTag(builder, tag);
-        execute(builder.build(), listener, getTag(tag));
+        return execute(builder.build(), synchron, listener, getTag(tag));
     }
 
     @Override
-    public void post(HttpRequest request, LoadListener listener, Object tag) {
+    public HttpResponse post(HttpRequest request, LoadListener listener, Object... tag) {
         String url = request.getUrl();
         RequestParams requestParams = request.getRequestParams();
         HttpHeader header = request.getHeader();
+        boolean synchron = request.isSynchron();
+
         String params = requestParams.toString();
         String contentType = requestParams.getContentType();
         String charset = requestParams.getCharSet();
@@ -86,22 +89,26 @@ public class OKHttp implements HttpBase {
         Request.Builder builder = getBuilder().url(url).post(RequestBody.create(MediaType.parse(contentType + ";" + charset), params));
         addHeader(builder, header);
         addTag(builder, tag);
-        execute(builder.build(), listener, getTag(tag));
+        return execute(builder.build(), synchron, listener, getTag(tag));
     }
 
     @Override
-    public void request(HttpRequest request, LoadListener listener, Object tag) {
+    public HttpResponse request(HttpRequest request, LoadListener listener, Object... tag) {
         String url = request.getUrl();
         RequestParams requestParams = request.getRequestParams();
         HttpHeader header = request.getHeader();
+        boolean synchron = request.isSynchron();
         String params = requestParams.toString();
+
         HttpMethod method = request.getMethod();
         Request.Builder builder = getBuilder().url(url);
         String contentType = requestParams.getContentType();
         String charset = requestParams.getCharSet();
+
         if (TextUtils.isEmpty(contentType) || TextUtils.isEmpty(charset)) {
             throw new RuntimeException("contentType is empty || charset is empty");
         }
+        addHeader(builder, header);
         if (!TextUtils.isEmpty(params)) {
             builder.method(method.toString(), RequestBody.create(MediaType.parse(contentType + ";" + charset), params));
         }
@@ -111,7 +118,7 @@ public class OKHttp implements HttpBase {
                 break;
         }
         addTag(builder, tag);
-        execute(builder.build(), listener, getTag(tag));
+        return execute(builder.build(), synchron, listener, getTag(tag));
     }
 
     private void addHeader(Request.Builder builder, HttpHeader header) {
@@ -160,38 +167,45 @@ public class OKHttp implements HttpBase {
         return new Request.Builder();
     }
 
-    private void execute(final Request request,
-                         final LoadListener listener, Object tag) {
+    private HttpResponse execute(final Request request, final boolean synchron,
+                                 final LoadListener listener, Object tag) {
         final Call call = mOkHttpClient.newCall(request);
-        Task netWorkTask = new Task(tag, listener) {
-            @Override
-            public void onRun() {
-                try {
-                    Response response = call.execute();
-
-                    long length = response.body().contentLength();
-                    String result = response.body().string();
-                    InputStream inStream = response.body().byteStream();
-
-                    HttpResponse httpResponse = new HttpResponse();
-                    httpResponse.setResponseBody(response.body());
-                    notifySuccess(httpResponse);
-                } catch (Exception e) {
-                    if (e.toString().toLowerCase().contains("canceled")
-                            || e.toString().toLowerCase().contains("closed")) {
-                        notifyCancel(e);
-                    } else {
-                        notifyFail(e);
+        HttpResponse httpResponse = null;
+        if (synchron) {
+            try {
+                Response response = call.execute();
+                httpResponse = new HttpResponse();
+                httpResponse.setResponseBody(response.body());
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        } else {
+            Task netWorkTask = new Task(tag, listener) {
+                @Override
+                public void onRun() {
+                    try {
+                        Response response = call.execute();
+                        HttpResponse httpResponse = new HttpResponse();
+                        httpResponse.setResponseBody(response.body());
+                        notifySuccess(httpResponse);
+                    } catch (Exception e) {
+                        if (e.toString().toLowerCase().contains("canceled")
+                                || e.toString().toLowerCase().contains("closed")) {
+                            notifyCancel(e);
+                        } else {
+                            notifyFail(e);
+                        }
+                        e.printStackTrace();
                     }
-                    e.printStackTrace();
                 }
-            }
 
-            @Override
-            public void cancelTask() {
-                call.cancel();
-            }
-        };
-        TaskPool.getInstance().execute(netWorkTask);
+                @Override
+                public void cancelTask() {
+                    call.cancel();
+                }
+            };
+            TaskPool.getInstance().execute(netWorkTask);
+        }
+        return httpResponse;
     }
 }

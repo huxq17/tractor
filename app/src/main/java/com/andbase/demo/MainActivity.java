@@ -10,7 +10,7 @@ import android.text.TextUtils;
 import android.view.View;
 
 import com.andbase.demo.base.BaseActivity;
-import com.andbase.demo.http.HttpResponse;
+import com.andbase.demo.http.response.HttpResponse;
 import com.andbase.tractor.listener.LoadListener;
 import com.andbase.tractor.listener.impl.LoadListenerImpl;
 import com.andbase.tractor.task.Task;
@@ -18,10 +18,6 @@ import com.andbase.tractor.task.TaskPool;
 import com.andbase.tractor.utils.LogUtils;
 import com.andbase.tractor.utils.Util;
 
-import java.io.File;
-import java.io.InputStream;
-import java.io.RandomAccessFile;
-import java.util.LinkedHashMap;
 import java.util.Random;
 
 /**
@@ -48,7 +44,7 @@ public class MainActivity extends BaseActivity {
 
     /**
      * Checks if the app has permission to write to device storage
-     *
+     * <p>
      * If the app does not has permission then the user will be prompted to grant permissions
      *
      * @param activity
@@ -186,106 +182,49 @@ public class MainActivity extends BaseActivity {
                     toast("没有sd卡");
                     return;
                 }
-                final String filePath = sdcardPath;
-                LogUtils.i("filePath ="+filePath);
-                final int threadNum = 3;
-                requestHeader(downloadUrl, filePath, threadNum, new LoadListenerImpl(this) {
+                String filedir = sdcardPath + "/tractor/down";
+                LogUtils.i("filedir =" + filedir);
+                String filename = Util.getFilename(downloadUrl);
+                int threadNum = 3;
+                download(downloadUrl, filedir, filename, threadNum, new LoadListenerImpl(this) {
+                    @Override
+                    public void onStart() {
+                        super.onStart();
+                        setMessage("获取文件信息...");
+                    }
+
                     @Override
                     public void onLoading(Object result) {
                         super.onLoading(result);
                         int process = (int) result;
-                        completed += process;
-                        int done = (int) (100 * (1.0f * completed / filelength));
-                        setMessage("已下载 " + done + "%");
+                        setMessage("已下载 " + process + "%");
                     }
+
+                    @Override
+                    public void onFail(Object result) {
+                        super.onFail(result);
+                        String response = (String) result;
+                        if (TextUtils.isEmpty(response)) {
+                            response = "下载失败";
+                        }
+                        setMessage(response);
+                    }
+
+                    @Override
+                    public void onSuccess(Object result) {
+                        super.onSuccess(result);
+                        setMessage("下载成功");
+                    }
+
                 }, this);
                 break;
         }
     }
 
-    private void requestHeader(final String url, final String filePath, final int threadNum, final LoadListener listener, final Object... tag) {
-        HttpSender.header(downloadUrl, filePath, threadNum, new LoadListenerImpl() {
-            @Override
-            public void onSuccess(Object result) {
-                super.onSuccess(result);
-                HttpResponse response = (HttpResponse) result;
-                filelength = response.getContentLength();
-                String sdcardPath = Util.getSdcardPath();
-                if (TextUtils.isEmpty(sdcardPath)) {
-                    listener.onFail("没有sd卡");
-                    return;
-                }
-                File saveFile = new File(filePath, Util.getFilename(url));
-                LogUtils.i("saveFile=" + saveFile.getAbsolutePath());
-                RandomAccessFile accessFile = null;
-                try {
-                    accessFile = new RandomAccessFile(saveFile, "rwd");
-                    accessFile.setLength(filelength);// 设置本地文件的长度和下载文件相同
-                    Util.closeQuietly(accessFile);
-                    long block = filelength % threadNum == 0 ? filelength / threadNum
-                            : filelength / threadNum + 1;
-                    for (int i = 0; i < threadNum; i++) {
-                        final long startposition = i * block;
-                        final long endposition = (i + 1) * block - 1;
-                        LinkedHashMap<String, String> header = new LinkedHashMap<>();
-                        header.put("RANGE", "bytes=" + startposition + "-"
-                                + endposition);
-                        final String filepath = saveFile.getAbsolutePath();
-                        HttpSender.download(downloadUrl, header, new LoadListenerImpl() {
-                            @Override
-                            public void onSuccess(Object result) {
-                                super.onSuccess(result);
-                                final HttpResponse httpResponse = (HttpResponse) result;
-                                TaskPool.getInstance().execute(new Task(MainActivity.this, new LoadListenerImpl() {
-                                    @Override
-                                    public void onLoading(Object result) {
-                                        super.onLoading(result);
-                                        listener.onLoading(result);
-                                    }
-                                }) {
-                                    @Override
-                                    public void onRun() {
-                                        InputStream inStream = httpResponse.getInputStream();
-                                        RandomAccessFile accessFile = null;
-                                        try {
-                                            LogUtils.i("onsucess=" + filepath);
-                                            File saveFile = new File(filepath);
-                                            accessFile = new RandomAccessFile(saveFile, "rwd");
-                                            accessFile.seek(startposition);// 设置从什么位置开始写入数据
-
-                                            byte[] buffer = new byte[1024];
-                                            int len = 0;
-                                            int total = 0;
-                                            while ((len = inStream.read(buffer)) != -1) {
-                                                accessFile.write(buffer, 0, len);
-                                                total += len;
-                                                // 实时更新进度
-                                                notifyLoading(len);
-                                            }
-                                        } catch (Exception e) {
-
-                                        } finally {
-                                            Util.closeQuietly(inStream);
-                                            Util.closeQuietly(accessFile);
-                                        }
-                                    }
-
-                                    @Override
-                                    public void cancelTask() {
-
-                                    }
-                                });
-
-                            }
-
-                        }, this);
-                    }
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }
-        }, this);
+    private void download(String downloadUrl, String filePath, String filename, int threadNum, LoadListenerImpl loadListener, Object tag) {
+        HttpSender.download(downloadUrl, filePath, filename, threadNum, loadListener, tag);
     }
+
 
     /**
      * 发起个普通的任务

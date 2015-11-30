@@ -11,6 +11,7 @@ public class HttpRequest {
     private HttpMethod method;
     private RequestParams requestParams;
     private String url;
+    private boolean synchron = false;
 
     public HttpHeader getHeader() {
         return header;
@@ -27,12 +28,16 @@ public class HttpRequest {
     public String getUrl() {
         return url;
     }
+    public boolean isSynchron(){
+        return synchron;
+    }
 
     private HttpRequest(Builder builder) {
         this.header = builder.header;
         this.method = builder.method;
         this.requestParams = builder.requestParams;
         this.url = builder.url;
+        this.synchron = builder.synchron;
     }
 
     public static class Builder {
@@ -40,6 +45,7 @@ public class HttpRequest {
         private HttpMethod method;
         private RequestParams requestParams;
         private String url;
+        private boolean synchron = false;
 
         public Builder() {
             header = new HttpHeader();
@@ -54,6 +60,15 @@ public class HttpRequest {
 
         public Builder addHeader(String name, String value) {
             header.addHeader(name, value);
+            return this;
+        }
+
+        /**
+         *  同步请求，默认为异步请求
+         * @return
+         */
+        public Builder synchron(){
+            this.synchron = true;
             return this;
         }
         public Builder setHeader(LinkedHashMap<String,String> header){
