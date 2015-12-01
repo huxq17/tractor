@@ -189,7 +189,7 @@ public class HttpSender {
                         LogUtils.d("len=" + len);
                         if (!info.compute(len)) {
                             //当下载任务失败以后结束此下载线程
-                            LogUtils.i("停止下载");
+                            LogUtils.d("停止下载");
                             break;
                         }
                     }

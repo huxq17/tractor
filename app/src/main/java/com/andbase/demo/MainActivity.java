@@ -190,10 +190,7 @@ public class MainActivity extends BaseActivity {
                     @Override
                     public void onStart(Object result) {
                         super.onStart(result);
-                        if (result != null) {
-                            String respone = (String) result;
-                            setMessage(respone);
-                        }
+                        setMessage("准备下载中...");
                     }
 
                     @Override
@@ -230,8 +227,14 @@ public class MainActivity extends BaseActivity {
                     @Override
                     public void onCancelClick() {
                         super.onCancelClick();
-                        setMessage("正在停止下载...");
+                        setMessage("正在取消下载...");
                         TaskPool.getInstance().cancelTask(MainActivity.this);
+                    }
+
+                    @Override
+                    public void onCancel(Object result) {
+                        super.onCancel(result);
+                        setMessage("已取消下载");
                     }
                 }, this);
                 break;
