@@ -1,6 +1,5 @@
 package com.andbase.tractor.task;
 
-import com.andbase.tractor.listener.impl.LoadListenerImpl;
 import com.andbase.tractor.task.threadpool.CachedThreadPool;
 import com.andbase.tractor.utils.LogUtils;
 
@@ -120,14 +119,10 @@ public class TaskPool {
         if (task == null) {
             return;
         }
-        //异步取消任务
-        execute(new CancelTask(task, new LoadListenerImpl() {
-            @Override
-            public void onSuccess(Object result) {
-                super.onSuccess(result);
-                task.cancel();
-            }
-        }));
+        //先在ui上呈现给用户取消的效果
+        task.cancel();
+        //再异步取消任务
+        execute(new CancelTask(task, null));
     }
 
     @Override
