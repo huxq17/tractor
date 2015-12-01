@@ -114,6 +114,9 @@ public class HttpSender {
                 }
                 long filelength = headResponse.getContentLength();
                 info.fileLength = filelength;
+                if(filelength<0){
+                    notifyFail("获取下载文件信息失败");
+                }
                 final long starttime = System.currentTimeMillis();
 
                 long block = filelength % threadNum == 0 ? filelength / threadNum
@@ -181,7 +184,7 @@ public class HttpSender {
                     accessFile.seek(startposition);// 设置从什么位置开始写入数据
 
                     byte[] buffer = new byte[allocated];
-//                    byte[] buffer = new byte[1024];
+//                    byte[] buffer = new byte[2048];
                     int len = 0;
                     while ((len = inStream.read(buffer)) != -1) {
                         accessFile.write(buffer, 0, len);
