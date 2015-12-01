@@ -10,6 +10,7 @@ import android.text.TextUtils;
 import android.view.View;
 
 import com.andbase.demo.base.BaseActivity;
+import com.andbase.demo.bean.DownloadInfo;
 import com.andbase.demo.http.response.HttpResponse;
 import com.andbase.tractor.listener.LoadListener;
 import com.andbase.tractor.listener.impl.LoadListenerImpl;
@@ -18,17 +19,13 @@ import com.andbase.tractor.task.TaskPool;
 import com.andbase.tractor.utils.LogUtils;
 import com.andbase.tractor.utils.Util;
 
-import java.io.File;
 import java.util.Random;
 
 /**
  * Created by huxq17 on 2015/11/16.
  */
 public class MainActivity extends BaseActivity {
-    private String downloadUrl = "http://192.168.2.103:8080/test/firetweet.apk";
-    int completed = 0;
-    long filelength = 0;
-    long done = 0;
+    private String downloadUrl = "http://192.168.2.199:8080/test/game.apk";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -46,7 +43,7 @@ public class MainActivity extends BaseActivity {
 
     /**
      * Checks if the app has permission to write to device storage
-     * <p>
+     * <p/>
      * If the app does not has permission then the user will be prompted to grant permissions
      *
      * @param activity
@@ -72,8 +69,8 @@ public class MainActivity extends BaseActivity {
                 //当LoadListenerImpl构造函数传入context，则显示progressdialog
                 doNormalTask(new LoadListenerImpl(this) {
                     @Override
-                    public void onStart() {
-                        super.onStart();
+                    public void onStart(Object result) {
+                        super.onStart(result);
                         setMessage("任务开始");
                     }
 
@@ -132,8 +129,8 @@ public class MainActivity extends BaseActivity {
             case R.id.bt_task_timeout:
                 doTimeoutTask(500, new LoadListenerImpl() {
                     @Override
-                    public void onStart() {
-                        super.onStart();
+                    public void onStart(Object result) {
+                        super.onStart(result);
                         toast("超时任务开始执行");
                     }
 
@@ -188,69 +185,57 @@ public class MainActivity extends BaseActivity {
                 LogUtils.i("filedir =" + filedir);
                 final String filename = Util.getFilename(downloadUrl);
                 final int threadNum = 3;
-                done=0;
-                HttpSender.header(downloadUrl, new LoadListenerImpl() {
+                DownloadInfo info = new DownloadInfo(downloadUrl, filedir, filename, threadNum);
+                HttpSender.download(info, new LoadListenerImpl(this) {
+                    @Override
+                    public void onStart(Object result) {
+                        super.onStart(result);
+                        if (result != null) {
+                            String respone = (String) result;
+                            setMessage(respone);
+                        }
+                    }
+
+                    @Override
+                    public void onLoading(Object result) {
+                        super.onLoading(result);
+                        int process = (int) result;
+                        LogUtils.i("已下载 " + process + "%");
+                        setMessage("已下载 " + process + "%");
+                    }
+
                     @Override
                     public void onSuccess(Object result) {
                         super.onSuccess(result);
-                        HttpResponse response = (HttpResponse) result;
-                        if (response != null) {
-                            filelength = response.getContentLength();
-                            final long starttime = System.currentTimeMillis();
-                            download(downloadUrl, filelength, filedir, filename, threadNum, new LoadListenerImpl(MainActivity.this) {
-
-                                @Override
-                                public void onLoading(Object result) {
-                                    super.onLoading(result);
-                                    int process = (int) result;
-                                    done += process;
-                                    LogUtils.d("done=" + done + ";filelength=" + filelength);
-                                    setMessage("已下载 " + (int) (100 * (1.0f * done / filelength)) + "%");
-                                    if (done == filelength){
-                                        onSuccess(null);
-                                    }
-                                }
-
-                                @Override
-                                public void onFail(Object result) {
-                                    super.onFail(result);
-                                    String response = (String) result;
-                                    if (TextUtils.isEmpty(response)) {
-                                        response = "下载失败";
-                                    }
-                                    setMessage(response);
-                                }
-
-                                @Override
-                                public void onSuccess(Object result) {
-                                    super.onSuccess(result);
-                                    long spend = System.currentTimeMillis()-starttime;
-                                    LogUtils.i("memory spendTime="+spend);
-                                    setMessage("下载成功;" + "spendTime="+spend);
-                                    File file = new File(filedir,filename);
-                                    String filePath = filedir+filename;
-                                    Utils.install(MainActivity.this,filePath);
-                                }
-
-                            }, this);
-                        } else {
-                            toast("获取网络文件长度失败");
+                        setMessage("下载成功");
+                        if (filename.endsWith(".apk")) {
+                            String filePath = filedir + filename;
+                            Utils.install(MainActivity.this, filePath);
                         }
                     }
 
                     @Override
                     public void onFail(Object result) {
                         super.onFail(result);
-                        toast("获取网络文件长度失败");
+                        String response = null;
+                        if (result != null && result instanceof String) {
+                            response = (String) result;
+                        }
+                        if (TextUtils.isEmpty(response)) {
+                            response = "下载失败";
+                        }
+                        setMessage(response);
+                    }
+
+                    @Override
+                    public void onCancelClick() {
+                        super.onCancelClick();
+                        setMessage("正在停止下载...");
+                        TaskPool.getInstance().cancelTask(MainActivity.this);
                     }
                 }, this);
-
                 break;
         }
-    }
-
-    private void download(String downloadUrl, long filelength, String filePath, String filename, int threadNum, LoadListener loadListener, Object tag) {
-        HttpSender.download(downloadUrl, filelength, filePath, filename, threadNum, loadListener, tag);
     }
 
     /**

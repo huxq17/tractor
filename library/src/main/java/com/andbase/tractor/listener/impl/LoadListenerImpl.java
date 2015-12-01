@@ -45,7 +45,7 @@ public class LoadListenerImpl implements LoadListener {
     }
 
     @Override
-    public void onStart() {
+    public void onStart(Object result) {
         show();
     }
 

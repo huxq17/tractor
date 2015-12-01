@@ -10,7 +10,7 @@ public interface LoadListener {
 	/**
 	 * 任务加载开始
 	 */
-	void onStart();
+	void onStart(Object result);
 	/**
 	 * 任务加载中
 	 * @param result

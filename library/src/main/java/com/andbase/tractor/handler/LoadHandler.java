@@ -50,7 +50,7 @@ public class LoadHandler extends Handler {
         switch (msg.what) {
             case Constants.LOAD_START:// 开始加载
                 if (listener != null) {
-                    listener.onStart();
+                    listener.onStart(null);
                 }
                 break;
             case Constants.LOAD_ING:// 开始加载

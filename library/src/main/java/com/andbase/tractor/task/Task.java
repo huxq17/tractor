@@ -96,10 +96,10 @@ public abstract class Task implements Runnable {
     /**
      * 通知调用者任务开始
      */
-    public final void notifyStart() {
+    public final void notifyStart(Object result) {
         mStatus = Status.READY;
         if (mHandler != null) {
-            HandlerUtils.sendMsg(mHandler, Constants.LOAD_START);
+            HandlerUtils.sendMsg(mHandler, Constants.LOAD_START, result);
         }
     }
 
@@ -250,7 +250,7 @@ public abstract class Task implements Runnable {
     }
 
     private void start() {
-        notifyStart();
+        notifyStart(null);
         if (mTaskTimeout > 0) {
             startTimeCountTask(mTaskTimeout);
         }

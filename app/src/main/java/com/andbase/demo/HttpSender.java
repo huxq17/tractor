@@ -2,13 +2,13 @@ package com.andbase.demo;
 
 import android.text.TextUtils;
 
+import com.andbase.demo.bean.DownloadInfo;
 import com.andbase.demo.http.HttpBase;
 import com.andbase.demo.http.OKHttp;
 import com.andbase.demo.http.request.HttpMethod;
 import com.andbase.demo.http.request.HttpRequest;
 import com.andbase.demo.http.response.HttpResponse;
 import com.andbase.tractor.listener.LoadListener;
-import com.andbase.tractor.listener.impl.LoadListenerImpl;
 import com.andbase.tractor.task.Task;
 import com.andbase.tractor.task.TaskPool;
 import com.andbase.tractor.utils.LogUtils;
@@ -96,40 +96,72 @@ public class HttpSender {
     /**
      * 下载文件，支持多线程下载
      *
-     * @param url       下载地址
-     * @param fileDir   下载文件保存路径
-     * @param fileName  文件名
-     * @param threadNum 线程数
+     * @param info     下载信息，url,文件保存路径等
      * @param listener
      * @param tag
      */
-    public static void download(final String url, long filelength, final String fileDir, final String fileName, final int threadNum, final LoadListener listener, final Object tag) {
-        setFileLength(fileDir, fileName, filelength);
-        long block = filelength % threadNum == 0 ? filelength / threadNum
-                : filelength / threadNum + 1;
-        String filepath = fileDir + fileName;
-        listener.onStart();
-        LogUtils.i("");
-        int freeMemory = ((int) Runtime.getRuntime().freeMemory());// 获取应用剩余可用内存
-        int allocated = freeMemory / threadNum / 2;//给每个线程分配的内存
-        LogUtils.i("spendTime allocated = "+allocated);
-        for (int i = 0; i < threadNum; i++) {
-            doDownload(url, allocated, i, filepath, block, listener, tag);
-        }
-    }
-
-    public static void doDownload(final String url, final int allocated, final int i, final String filepath, final long block, final LoadListener listener, final Object tag) {
-        TaskPool.getInstance().execute(new Task(tag, new LoadListenerImpl() {
-            @Override
-            public void onLoading(Object result) {
-                super.onLoading(result);
-                listener.onLoading(result);
-            }
-        }) {
+    public static void download(final DownloadInfo info, final LoadListener listener, final Object tag) {
+        TaskPool.getInstance().execute(new Task(tag, listener) {
             @Override
             public void onRun() {
-                final long startposition = i * block;
-                final long endposition = (i + 1) * block - 1;
+                notifyStart("开始下载...");
+                String url = info.url;
+                int threadNum = info.threadNum;
+                HttpResponse headResponse = headerSync(url, tag);
+                if (headResponse == null) {
+                    notifyFail("获取下载文件信息失败");
+                    return;
+                }
+                long filelength = headResponse.getContentLength();
+                info.fileLength = filelength;
+                final long starttime = System.currentTimeMillis();
+
+                long block = filelength % threadNum == 0 ? filelength / threadNum
+                        : filelength / threadNum + 1;
+                setFileLength(info.fileDir, info.filename, info.fileLength);
+                int freeMemory = ((int) Runtime.getRuntime().freeMemory());// 获取应用剩余可用内存
+                int allocated = freeMemory / 6 / threadNum;//给每个线程分配的内存
+                info.setTask(this);
+                LogUtils.d("spendTime allocated = " + allocated);
+                for (int i = 0; i < threadNum; i++) {
+                    final long startposition = i * block;
+                    final long endposition = (i + 1) * block - 1;
+                    info.startPos = startposition;
+                    info.endPos = endposition;
+                    downBlock(info, allocated, this, tag);
+                }
+                synchronized (this) {
+                    try {
+                        this.wait();
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+                if (info.compeleteSize != info.fileLength) {
+                    notifyFail(null);
+                    LogUtils.i("download failed! spendTime=" + (System.currentTimeMillis() - starttime));
+                } else {
+                    LogUtils.i("download finshed! spendTime=" + (System.currentTimeMillis() - starttime));
+                }
+            }
+
+            @Override
+            public void cancelTask() {
+                synchronized (this) {
+                    this.notify();
+                }
+            }
+        });
+    }
+
+    private static void downBlock(final DownloadInfo info, final int allocated, final Task task, final Object tag) {
+        final long startposition = info.startPos;
+        final long endposition = info.endPos;
+        final String url = info.url;
+        final String filepath = info.filePath;
+        TaskPool.getInstance().execute(new Task() {
+            @Override
+            public void onRun() {
                 LogUtils.d("startposition=" + startposition + ";endposition=" + endposition);
                 LinkedHashMap<String, String> header = new LinkedHashMap<>();
                 header.put("RANGE", "bytes=" + startposition + "-"
@@ -139,7 +171,7 @@ public class HttpSender {
                 if (downloadResponse != null) {
                     inStream = downloadResponse.getInputStream();
                 } else {
-                    notifyFail("获取网络文件返回输入流失败");
+                    notifyDownloadFailed(null);
                     return;
                 }
                 RandomAccessFile accessFile = null;
@@ -151,21 +183,29 @@ public class HttpSender {
                     byte[] buffer = new byte[allocated];
 //                    byte[] buffer = new byte[1024];
                     int len = 0;
-                    int total = 0;
                     while ((len = inStream.read(buffer)) != -1) {
                         accessFile.write(buffer, 0, len);
-                        total += len;
                         // 实时更新进度
-                        synchronized (HttpSender.class) {
-                            total += len;
-                            notifyLoading(len);
+                        LogUtils.d("len=" + len);
+                        if (!info.compute(len)) {
+                            //当下载任务失败以后结束此下载线程
+                            LogUtils.i("停止下载");
+                            break;
                         }
                     }
                 } catch (Exception e) {
                     e.printStackTrace();
+                    notifyDownloadFailed(e);
                 } finally {
                     Util.closeQuietly(inStream);
                     Util.closeQuietly(accessFile);
+                }
+            }
+
+            private void notifyDownloadFailed(Exception e) {
+                task.notifyFail(e);
+                synchronized (task) {
+                    task.notify();
                 }
             }
 
