@@ -19,21 +19,26 @@ import com.andbase.tractor.task.TaskPool;
 import com.andbase.tractor.utils.LogUtils;
 import com.andbase.tractor.utils.Util;
 
+import java.io.File;
 import java.util.Random;
 
 /**
  * Created by huxq17 on 2015/11/16.
  */
 public class MainActivity extends BaseActivity {
-    private String domin = "http://192.168.2.103:8080/";
-    private String downloadUrl = domin+"test/firetweet.apk";
-    private String uploadUrl = domin+"UploadTest/Upload";
+    private String domin = "http://192.168.2.199:8080/";
+    //    private String domin = "http://192.168.2.103:8080/";
+    private String downloadUrl = domin + "test/firetweet.apk";
+    private String uploadUrl = domin + "UploadTest/Upload";
+    private String sdcardPath;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.act_main);
         verifyStoragePermissions(this);
+        sdcardPath = Util.getSdcardPath();
+
     }
 
     // Storage Permissions
@@ -177,9 +182,37 @@ public class MainActivity extends BaseActivity {
                 break;
             case R.id.bt_task_post_normal:
                 break;
+            case R.id.bt_task_upload:
+                String dir = sdcardPath + "/tractor/down/";
+                File file = new File(dir);
+                if(!file.exists()){
+                    toast("上传路径不存在！");
+                    return;
+                }
+                File[] files = file.listFiles();
+                HttpSender.upload(uploadUrl, null, files, new LoadListenerImpl(this) {
+                    @Override
+                    public void onStart(Object result) {
+                        super.onStart(result);
+                        setMessage("正在上传中...");
+                    }
+
+                    @Override
+                    public void onSuccess(Object result) {
+                        super.onSuccess(result);
+                        HttpResponse response = (HttpResponse) result;
+                        setMessage(response.string());
+                    }
+
+                    @Override
+                    public void onFail(Object result) {
+                        super.onFail(result);
+                        setMessage("上传失败!");
+                    }
+                }, this);
+                break;
             case R.id.bt_task_download:
-                String sdcardPath = Util.getSdcardPath();
-                if (TextUtils.isEmpty(sdcardPath)) {
+                if (isEmpty(sdcardPath)) {
                     toast("没有sd卡");
                     return;
                 }

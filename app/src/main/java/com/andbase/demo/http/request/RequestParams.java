@@ -6,7 +6,9 @@ import com.andbase.demo.http.body.FileBody;
 import com.andbase.tractor.utils.LogUtils;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 
 /**
  * Created by 2144 on 2015/11/26.
@@ -17,11 +19,11 @@ public class RequestParams {
     private String stringParams;
 
     private LinkedHashMap<String, Object> mParams;
-    private LinkedHashMap<String, FileBody> mFileParams;
+    private List<FileBody> mFiles;
 
     public RequestParams() {
         mParams = new LinkedHashMap<>();
-        mFileParams = new LinkedHashMap<>();
+        mFiles = new ArrayList<>();
     }
 
     /**
@@ -33,7 +35,8 @@ public class RequestParams {
     public void addParams(String name, Object params) {
         mParams.put(name, params);
     }
-    public void setParams(LinkedHashMap<String,Object> params){
+
+    public void setParams(LinkedHashMap<String, Object> params) {
         mParams = params;
     }
 
@@ -48,14 +51,14 @@ public class RequestParams {
     /**
      * 提交文件
      *
-     * @param name
+     * @param file
      */
-    public void addFile(String name, File file) {
+    public void addFile(File file) {
         if (file == null || !file.exists()) {
             throw new RuntimeException("file==null||!file.exists()");
         }
-        FileBody body = new FileBody(name, file, file.getName(), null);
-        mFileParams.put(name, body);
+        FileBody body = new FileBody(file.getName(), file.getAbsolutePath(), file);
+        mFiles.add(body);
     }
 
     /**
@@ -63,22 +66,38 @@ public class RequestParams {
      *
      * @param name
      */
-    public void addFile(String name, File file, String filename, String contentType) {
-        FileBody body = new FileBody(name, file, filename, contentType);
-        mFileParams.put(name, body);
+    public void addFile(String name, File file) {
+        if (file == null || !file.exists()) {
+            throw new RuntimeException("file==null||!file.exists()");
+        }
+        FileBody body = new FileBody(name, file.getAbsolutePath(), file);
+        mFiles.add(body);
+    }
+
+    /**
+     * 提交文件
+     *
+     * @param name
+     */
+    public void addFile(String name, File file, String contentType) {
+        if (file == null || !file.exists()) {
+            throw new RuntimeException("file==null||!file.exists()");
+        }
+        FileBody body = new FileBody(name, file.getAbsolutePath(), file, contentType);
+        mFiles.add(body);
     }
 
     public void clear() {
         mParams.clear();
-        mFileParams.clear();
+        mFiles.clear();
     }
 
     public LinkedHashMap<String, Object> getmParams() {
         return mParams;
     }
 
-    public LinkedHashMap<String, FileBody> getmFileParams() {
-        return mFileParams;
+    public List<FileBody> getFiles() {
+        return mFiles;
     }
 
     public void setContentType(String contentType) {
@@ -99,7 +118,7 @@ public class RequestParams {
 
     @Override
     public String toString() {
-        if(!TextUtils.isEmpty(stringParams)){
+        if (!TextUtils.isEmpty(stringParams)) {
             return stringParams;
         }
         StringBuilder sb = new StringBuilder();

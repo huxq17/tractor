@@ -93,6 +93,21 @@ public class HttpSender {
         return response;
     }
 
+    public static void upload(String url, LinkedHashMap<String, String> headers, File[] files, LinkedHashMap<String, Object> params, LoadListener listener, Object tag) {
+        HttpRequest.Builder builder = new HttpRequest.Builder();
+        builder.url(url);
+        addHeaders(builder, headers);
+        for (File file : files) {
+            builder.addFile(file);
+        }
+        mHttpBase.post(builder.build(), listener, tag);
+    }
+
+    public static void upload(String url, LinkedHashMap<String, String> headers, File[] files, LoadListener listener, Object tag) {
+        upload(url, headers, files, null, listener, tag);
+    }
+
+
     /**
      * 下载文件，支持多线程下载
      *
@@ -114,7 +129,7 @@ public class HttpSender {
                 }
                 long filelength = headResponse.getContentLength();
                 info.fileLength = filelength;
-                if(filelength<0){
+                if (filelength < 0) {
                     notifyFail("获取下载文件信息失败");
                 }
                 final long starttime = System.currentTimeMillis();

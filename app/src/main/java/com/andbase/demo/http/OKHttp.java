@@ -4,6 +4,7 @@ import android.annotation.TargetApi;
 import android.os.Build;
 import android.text.TextUtils;
 
+import com.andbase.demo.http.body.FileBody;
 import com.andbase.demo.http.request.HttpHeader;
 import com.andbase.demo.http.request.HttpMethod;
 import com.andbase.demo.http.request.HttpRequest;
@@ -14,17 +15,22 @@ import com.andbase.tractor.task.Task;
 import com.andbase.tractor.task.TaskPool;
 import com.andbase.tractor.utils.LogUtils;
 import com.squareup.okhttp.Call;
+import com.squareup.okhttp.Headers;
 import com.squareup.okhttp.Interceptor;
 import com.squareup.okhttp.MediaType;
+import com.squareup.okhttp.MultipartBuilder;
 import com.squareup.okhttp.OkHttpClient;
 import com.squareup.okhttp.Request;
 import com.squareup.okhttp.RequestBody;
 import com.squareup.okhttp.Response;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.CookieManager;
 import java.net.CookiePolicy;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 
@@ -81,13 +87,11 @@ public class OKHttp implements HttpBase {
         HttpHeader header = request.getHeader();
         boolean synchron = request.isSynchron();
 
-        String params = requestParams.toString();
-        String contentType = requestParams.getContentType();
-        String charset = requestParams.getCharSet();
-        if (params == null || TextUtils.isEmpty(contentType) || TextUtils.isEmpty(charset)) {
-            throw new RuntimeException("params is null");
+        RequestBody requestBody = buildRequestBody(requestParams);
+        if (requestBody == null) {
+            throw new RuntimeException("requestBody==null");
         }
-        Request.Builder builder = getBuilder().url(url).post(RequestBody.create(MediaType.parse(contentType + ";" + charset), params));
+        Request.Builder builder = getBuilder().url(url).post(requestBody);
         addHeader(builder, header);
         addTag(builder, tag);
         return execute(builder.build(), synchron, listener, getTag(tag));
@@ -122,6 +126,42 @@ public class OKHttp implements HttpBase {
         return execute(builder.build(), synchron, listener, getTag(tag));
     }
 
+    private RequestBody buildRequestBody(RequestParams requestParams) {
+        List<FileBody> files = requestParams.getFiles();
+        String contentType = requestParams.getContentType();
+        String charset = requestParams.getCharSet();
+        String params = requestParams.toString();
+        LinkedHashMap<String, Object> paramsHashmap = requestParams.getmParams();
+        if (params == null || TextUtils.isEmpty(contentType) || TextUtils.isEmpty(charset)) {
+            throw new RuntimeException("params is null");
+        }
+        LogUtils.d("upload file.size="+files.size());
+        if (files != null && files.size() > 0) {
+            MultipartBuilder builder = new MultipartBuilder()
+                    .type(MultipartBuilder.FORM);
+            for (FileBody body : files) {
+                String paramName = body.getParameterName();
+                File file = body.getFile();
+                contentType = body.getContentType();
+                RequestBody fileBody = RequestBody.create(MediaType.parse(contentType), file);
+                builder.addPart(Headers.of("Content-Disposition",
+                                "form-data; name=\"" + paramName + "\"; filename=\"" + file.getName() + "\""),
+                        fileBody);
+                LogUtils.d("upload paramName="+paramName+";filename="+file.getName());
+            }
+            for (LinkedHashMap.Entry set : paramsHashmap.entrySet()) {
+                Object value = set.getValue();
+                if (value instanceof String) {
+                    builder.addPart(Headers.of("Content-Disposition", "form-data; name=\"" + set.getKey() + "\""),
+                            RequestBody.create(null, value.toString()));
+                }
+            }
+            return builder.build();
+        } else {
+            return RequestBody.create(MediaType.parse(contentType + ";" + charset), params);
+        }
+    }
+
     private void addHeader(Request.Builder builder, HttpHeader header) {
         HashMap<String, String> headers = header.getHeaders();
         if (headers != null && headers.size() > 0) {
@@ -131,17 +171,6 @@ public class OKHttp implements HttpBase {
             }
         }
     }
-
-//    public RequestBody addParams(LinkedHashMap<String, String> params) {
-//        FormEncodingBuilder formbuiBuilder = new FormEncodingBuilder();
-//        if (params != null && params.size() > 0) {
-//            for (String key : params.keySet()) {
-//                formbuiBuilder.add(key, params.get(key));
-//            }
-//            return formbuiBuilder.build();
-//        }
-//        return null;
-//    }
 
     public void addTag(Request.Builder builder, Object... tag) {
         if (tag != null && tag.length == 1) {

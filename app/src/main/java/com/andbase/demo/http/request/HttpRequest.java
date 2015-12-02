@@ -108,14 +108,17 @@ public class HttpRequest {
             requestParams.addParams(name, value);
             return this;
         }
-
+        public Builder addFile(File file){
+            requestParams.addFile(file);
+            return this;
+        }
         public Builder addFile(String name, File file) {
             requestParams.addFile(name, file);
             return this;
         }
 
-        public Builder addFile(String name, File file, String filename, String contentType) {
-            requestParams.addFile(name, file, filename, contentType);
+        public Builder addFile(String name, File file, String contentType) {
+            requestParams.addFile(name, file, contentType);
             return this;
         }
 
