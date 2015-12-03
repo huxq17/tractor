@@ -185,7 +185,7 @@ public class MainActivity extends BaseActivity {
             case R.id.bt_task_upload:
                 String dir = sdcardPath + "/tractor/down/";
                 File file = new File(dir);
-                if(!file.exists()){
+                if (!file.exists()) {
                     toast("上传路径不存在！");
                     return;
                 }
@@ -201,8 +201,8 @@ public class MainActivity extends BaseActivity {
                     public void onLoading(Object result) {
                         super.onLoading(result);
                         int process = (int) result;
-                        setMessage("已上传 "+process+"%");
-                        LogUtils.d("已上传 "+process+"%");
+                        setMessage("已上传 " + process + "%");
+                        LogUtils.d("已上传 " + process + "%");
                     }
 
                     @Override
@@ -216,6 +216,19 @@ public class MainActivity extends BaseActivity {
                     public void onFail(Object result) {
                         super.onFail(result);
                         setMessage("上传失败!");
+                    }
+
+                    @Override
+                    public void onCancelClick() {
+                        super.onCancelClick();
+                        setMessage("正在取消上传...");
+                        TaskPool.getInstance().cancelTask(MainActivity.this);
+                    }
+
+                    @Override
+                    public void onCancel(Object result) {
+                        super.onCancel(result);
+                        setMessage("已取消上传");
                     }
                 }, this);
                 break;
