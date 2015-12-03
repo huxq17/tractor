@@ -198,6 +198,13 @@ public class MainActivity extends BaseActivity {
                     }
 
                     @Override
+                    public void onLoading(Object result) {
+                        super.onLoading(result);
+                        int process = (int) result;
+                        setMessage("已上传 "+process+"%");
+                    }
+
+                    @Override
                     public void onSuccess(Object result) {
                         super.onSuccess(result);
                         HttpResponse response = (HttpResponse) result;

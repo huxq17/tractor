@@ -2,9 +2,11 @@ package com.andbase.demo.http;
 
 import android.annotation.TargetApi;
 import android.os.Build;
+import android.os.StrictMode;
 import android.text.TextUtils;
 
 import com.andbase.demo.http.body.FileBody;
+import com.andbase.demo.http.request.CountingRequestBody;
 import com.andbase.demo.http.request.HttpHeader;
 import com.andbase.demo.http.request.HttpMethod;
 import com.andbase.demo.http.request.HttpRequest;
@@ -41,17 +43,20 @@ import java.util.concurrent.TimeUnit;
 public class OKHttp implements HttpBase {
 
     private static final OkHttpClient mOkHttpClient = new OkHttpClient();
+    private NetWorkTask netWorkTask = new NetWorkTask();
 
     static {
         mOkHttpClient.setRetryOnConnectionFailure(true);
         mOkHttpClient.setConnectTimeout(15, TimeUnit.SECONDS);
         mOkHttpClient.setReadTimeout(15, TimeUnit.SECONDS);
-        mOkHttpClient.setWriteTimeout(15,TimeUnit.SECONDS);
+        mOkHttpClient.setWriteTimeout(15, TimeUnit.SECONDS);
         mOkHttpClient.networkInterceptors().add(new RedirectInterceptor());
         int versionCode = Build.VERSION.SDK_INT;
         if (versionCode >= 9) {
             mOkHttpClient.setCookieHandler(new CookieManager(null,
                     CookiePolicy.ACCEPT_ORIGINAL_SERVER));
+            StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitNetwork().build();
+            StrictMode.setThreadPolicy(policy);
         }
     }
 
@@ -137,7 +142,7 @@ public class OKHttp implements HttpBase {
         if (params == null || TextUtils.isEmpty(contentType) || TextUtils.isEmpty(charset)) {
             throw new RuntimeException("params is null");
         }
-        LogUtils.d("upload file.size="+files.size());
+        LogUtils.d("upload file.size=" + files.size());
         if (files != null && files.size() > 0) {
             MultipartBuilder builder = new MultipartBuilder()
                     .type(MultipartBuilder.FORM);
@@ -149,7 +154,7 @@ public class OKHttp implements HttpBase {
                 builder.addPart(Headers.of("Content-Disposition",
                                 "form-data; name=\"" + paramName + "\"; filename=\"" + file.getName() + "\""),
                         fileBody);
-                LogUtils.d("upload paramName="+paramName+";filename="+file.getName());
+                LogUtils.d("upload paramName=" + paramName + ";filename=" + file.getName());
             }
             for (LinkedHashMap.Entry set : paramsHashmap.entrySet()) {
                 Object value = set.getValue();
@@ -158,7 +163,9 @@ public class OKHttp implements HttpBase {
                             RequestBody.create(null, value.toString()));
                 }
             }
-            return builder.build();
+
+            return new CountingRequestBody(builder.build(), netWorkTask);
+//            return builder.build();
         } else {
             return RequestBody.create(MediaType.parse(contentType + ";" + charset), params);
         }
@@ -212,32 +219,42 @@ public class OKHttp implements HttpBase {
                 e.printStackTrace();
             }
         } else {
-            Task netWorkTask = new Task(tag, listener) {
-                @Override
-                public void onRun() {
-                    try {
-                        Response response = call.execute();
-                        HttpResponse httpResponse = new HttpResponse();
-                        httpResponse.setResponseBody(response.body());
-                        notifySuccess(httpResponse);
-                    } catch (Exception e) {
-                        if (e.toString().toLowerCase().contains("canceled")
-                                || e.toString().toLowerCase().contains("closed")) {
-                            notifyCancel(e);
-                        } else {
-                            notifyFail(e);
-                        }
-                        e.printStackTrace();
-                    }
-                }
-
-                @Override
-                public void cancelTask() {
-                    call.cancel();
-                }
-            };
+            netWorkTask.setCall(call,tag,listener);
             TaskPool.getInstance().execute(netWorkTask);
         }
         return httpResponse;
+    }
+
+    public class NetWorkTask extends Task {
+        private Call mCall;
+
+        public void setCall(Call call,Object tag,LoadListener listener) {
+            mCall = call;
+            setTag(tag);
+            setListener(listener);
+        }
+
+        @Override
+        public void onRun() {
+            try {
+                Response response = mCall.execute();
+                HttpResponse httpResponse = new HttpResponse();
+                httpResponse.setResponseBody(response.body());
+                notifySuccess(httpResponse);
+            } catch (Exception e) {
+                if (e.toString().toLowerCase().contains("canceled")
+                        || e.toString().toLowerCase().contains("closed")) {
+                    notifyCancel(e);
+                } else {
+                    notifyFail(e);
+                }
+                e.printStackTrace();
+            }
+        }
+
+        @Override
+        public void cancelTask() {
+            mCall.cancel();
+        }
     }
 }

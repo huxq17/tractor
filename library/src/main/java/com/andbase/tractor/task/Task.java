@@ -64,7 +64,7 @@ public abstract class Task implements Runnable {
         setTaskName(name);
         setTaskTimeout(timeout);
         setTag(tag);
-        setHandler(listener);
+        setListener(listener);
     }
 
     @Override
@@ -195,7 +195,7 @@ public abstract class Task implements Runnable {
         return this;
     }
 
-    public void setHandler(LoadListener listener) {
+    public void setListener(LoadListener listener) {
         if (listener != null) {
             mHandler = new LoadHandler(listener);
         }
