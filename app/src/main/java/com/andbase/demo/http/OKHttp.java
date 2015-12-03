@@ -44,7 +44,9 @@ public class OKHttp implements HttpBase {
 
     static {
         mOkHttpClient.setRetryOnConnectionFailure(true);
-        mOkHttpClient.setConnectTimeout(30, TimeUnit.SECONDS);
+        mOkHttpClient.setConnectTimeout(15, TimeUnit.SECONDS);
+        mOkHttpClient.setReadTimeout(15, TimeUnit.SECONDS);
+        mOkHttpClient.setWriteTimeout(15,TimeUnit.SECONDS);
         mOkHttpClient.networkInterceptors().add(new RedirectInterceptor());
         int versionCode = Build.VERSION.SDK_INT;
         if (versionCode >= 9) {
