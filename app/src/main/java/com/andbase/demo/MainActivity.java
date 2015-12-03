@@ -26,8 +26,8 @@ import java.util.Random;
  * Created by huxq17 on 2015/11/16.
  */
 public class MainActivity extends BaseActivity {
-    private String domin = "http://192.168.2.199:8080/";
-    //    private String domin = "http://192.168.2.103:8080/";
+//    private String domin = "http://192.168.2.199:8080/";
+        private String domin = "http://192.168.2.103:8080/";
     private String downloadUrl = domin + "test/firetweet.apk";
     private String uploadUrl = domin + "UploadTest/Upload";
     private String sdcardPath;

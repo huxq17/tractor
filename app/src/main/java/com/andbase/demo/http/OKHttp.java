@@ -2,7 +2,6 @@ package com.andbase.demo.http;
 
 import android.annotation.TargetApi;
 import android.os.Build;
-import android.os.StrictMode;
 import android.text.TextUtils;
 
 import com.andbase.demo.http.body.FileBody;
@@ -55,8 +54,8 @@ public class OKHttp implements HttpBase {
         if (versionCode >= 9) {
             mOkHttpClient.setCookieHandler(new CookieManager(null,
                     CookiePolicy.ACCEPT_ORIGINAL_SERVER));
-            StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitNetwork().build();
-            StrictMode.setThreadPolicy(policy);
+//            StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitNetwork().build();
+//            StrictMode.setThreadPolicy(policy);
         }
     }
 
