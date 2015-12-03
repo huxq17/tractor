@@ -194,7 +194,7 @@ public class MainActivity extends BaseActivity {
                     @Override
                     public void onStart(Object result) {
                         super.onStart(result);
-                        setMessage("正在上传中...");
+                        setMessage("准备上传中...");
                     }
 
                     @Override
@@ -202,6 +202,7 @@ public class MainActivity extends BaseActivity {
                         super.onLoading(result);
                         int process = (int) result;
                         setMessage("已上传 "+process+"%");
+                        LogUtils.d("已上传 "+process+"%");
                     }
 
                     @Override

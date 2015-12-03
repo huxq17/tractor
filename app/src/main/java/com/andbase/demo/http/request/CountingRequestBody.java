@@ -17,12 +17,13 @@ import okio.Sink;
  * decorate any request body, but is most useful for tracking the upload progress of large
  * multipart requests.
  *
- * @author Leo Nikkilä
+ * @author Leo Nikkil
  */
 public class CountingRequestBody extends RequestBody {
 
     protected RequestBody delegate;
     protected Task mTask;
+    private int mProcess = -1;
 
     protected CountingSink countingSink;
 
@@ -72,8 +73,9 @@ public class CountingRequestBody extends RequestBody {
 
             bytesWritten += byteCount;
             int process = (int) (1.0 * bytesWritten / contentLength() * 100);
-            if (mTask != null) {
+            if (mTask != null&&process!=mProcess) {
                 mTask.notifyLoading(process);
+                mProcess = process;
             }
             if (process == 100) {
                 mTask = null;
