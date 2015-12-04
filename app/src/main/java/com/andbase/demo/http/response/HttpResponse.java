@@ -1,9 +1,5 @@
 package com.andbase.demo.http.response;
 
-import com.andbase.tractor.utils.LogUtils;
-import com.squareup.okhttp.ResponseBody;
-
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.Serializable;
 
@@ -11,46 +7,55 @@ import java.io.Serializable;
  * Created by huxq17 on 2015/11/28.
  */
 public class HttpResponse implements Serializable {
-    private ResponseBody responseBody;
+    private String string;
+    private long contentLength;
+    private InputStream inputStream;
+    private ResponseType type;
 
-    public void setResponseBody(ResponseBody responseBody) {
-        this.responseBody = responseBody;
+    public void setContentLength(long contentLength) {
+        this.contentLength = contentLength;
+    }
+
+    public void setInputStream(InputStream inputStream) {
+        check(ResponseType.InputStream);
+        this.inputStream = inputStream;
+    }
+
+    private void check(ResponseType requstType) {
+        if (requstType != type) {
+            StringBuffer stringBuffer = new StringBuffer();
+            stringBuffer.append("response type mismatch,you need type is ").append(requstType)
+                    .append(" ，but your configuration is ").append(type).append(" ,so you should config responseType like this:");
+            switch (requstType) {
+                case String:
+                    stringBuffer.append(" builder.setResponseType(ResponseType.String);");
+                    break;
+                case InputStream:
+                    stringBuffer.append(" builder.setResponseType(ResponseType.InputStream);");
+                    break;
+            }
+            throw new RuntimeException(stringBuffer.toString());
+        }
     }
 
     public long getContentLength() {
-        if (responseBody != null) {
-            try {
-                long length = responseBody.contentLength();
-                LogUtils.d("length=" + length);
-                return length;
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-        return -1;
+        return contentLength;
     }
 
     public InputStream getInputStream() {
-        if (responseBody != null) {
-            try {
-                return responseBody.byteStream();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-        return null;
+        return inputStream;
+    }
+
+    public void setResponseType(ResponseType type) {
+        this.type = type;
+    }
+
+    public void setString(String string) {
+        this.string = string;
     }
 
     public String string() {
-        if (responseBody != null) {
-            try {
-                String result = responseBody.string();
-                return result;
-            } catch (IOException e) {
-                e.printStackTrace();
-            } finally {
-            }
-        }
-        return null;
+        check(ResponseType.String);
+        return string;
     }
 }

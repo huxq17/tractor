@@ -2,7 +2,6 @@ package com.andbase.demo.http;
 
 import android.annotation.TargetApi;
 import android.os.Build;
-import android.os.StrictMode;
 import android.text.TextUtils;
 
 import com.andbase.demo.http.body.FileBody;
@@ -12,6 +11,7 @@ import com.andbase.demo.http.request.HttpMethod;
 import com.andbase.demo.http.request.HttpRequest;
 import com.andbase.demo.http.request.RequestParams;
 import com.andbase.demo.http.response.HttpResponse;
+import com.andbase.demo.http.response.ResponseType;
 import com.andbase.tractor.listener.LoadListener;
 import com.andbase.tractor.task.Task;
 import com.andbase.tractor.task.TaskPool;
@@ -19,7 +19,6 @@ import com.andbase.tractor.utils.LogUtils;
 import com.squareup.okhttp.Call;
 import com.squareup.okhttp.Callback;
 import com.squareup.okhttp.Headers;
-import com.squareup.okhttp.Interceptor;
 import com.squareup.okhttp.MediaType;
 import com.squareup.okhttp.MultipartBuilder;
 import com.squareup.okhttp.OkHttpClient;
@@ -51,22 +50,13 @@ public class OKHttp implements HttpBase {
         mOkHttpClient.setConnectTimeout(15, TimeUnit.SECONDS);
         mOkHttpClient.setReadTimeout(15, TimeUnit.SECONDS);
         mOkHttpClient.setWriteTimeout(15, TimeUnit.SECONDS);
-        mOkHttpClient.networkInterceptors().add(new RedirectInterceptor());
+//        mOkHttpClient.networkInterceptors().add(new RedirectInterceptor());
         int versionCode = Build.VERSION.SDK_INT;
         if (versionCode >= 9) {
             mOkHttpClient.setCookieHandler(new CookieManager(null,
                     CookiePolicy.ACCEPT_ORIGINAL_SERVER));
-            StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitNetwork().build();
-            StrictMode.setThreadPolicy(policy);
-        }
-    }
-
-    static class RedirectInterceptor implements Interceptor {
-        @Override
-        public Response intercept(Chain chain) throws IOException {
-            Request originalRequest = chain.request();
-            Response response = chain.proceed(originalRequest);
-            return response;
+//            StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitNetwork().build();
+//            StrictMode.setThreadPolicy(policy);
         }
     }
 
@@ -90,13 +80,15 @@ public class OKHttp implements HttpBase {
         Request.Builder builder = getBuilder().url(url);
         addHeader(builder, header);
         addTag(builder, tag);
-        return execute(builder.build(), synchron, listener, getTag(tag));
+        ResponseType responseType = request.responseType();
+        return execute(responseType, HttpMethod.GET, builder.build(), synchron, listener, getTag(tag));
     }
 
     @Override
     public HttpResponse post(HttpRequest request, LoadListener listener, Object... tag) {
         prepareTask();
         String url = request.getUrl();
+        LogUtils.d("post url=" + url);
         RequestParams requestParams = request.getRequestParams();
         HttpHeader header = request.getHeader();
         boolean synchron = request.isSynchron();
@@ -108,7 +100,8 @@ public class OKHttp implements HttpBase {
         Request.Builder builder = getBuilder().url(url).post(requestBody);
         addHeader(builder, header);
         addTag(builder, tag);
-        return execute(builder.build(), synchron, listener, getTag(tag));
+        ResponseType responseType = request.responseType();
+        return execute(responseType, HttpMethod.POST, builder.build(), synchron, listener, getTag(tag));
     }
 
     @Override
@@ -118,9 +111,9 @@ public class OKHttp implements HttpBase {
         RequestParams requestParams = request.getRequestParams();
         HttpHeader header = request.getHeader();
         boolean synchron = request.isSynchron();
-        String params = requestParams.toString();
 
         HttpMethod method = request.getMethod();
+        LogUtils.d(method.toString()+" url=" + url);
         Request.Builder builder = getBuilder().url(url);
         String contentType = requestParams.getContentType();
         String charset = requestParams.getCharSet();
@@ -145,7 +138,8 @@ public class OKHttp implements HttpBase {
             builder.method(method.toString(), null);
         }
         addTag(builder, tag);
-        return execute(builder.build(), synchron, listener, getTag(tag));
+        ResponseType responseType = request.responseType();
+        return execute(responseType, method, builder.build(), synchron, listener, getTag(tag));
     }
 
     private RequestBody buildRequestBody(RequestParams requestParams) {
@@ -221,20 +215,37 @@ public class OKHttp implements HttpBase {
         return new Request.Builder();
     }
 
-    private HttpResponse execute(final Request request, final boolean synchron,
-                                 final LoadListener listener, Object tag) {
+    private HttpResponse execute(ResponseType type, HttpMethod method, Request request, boolean synchron, LoadListener listener, Object tag) {
         final Call call = mOkHttpClient.newCall(request);
         HttpResponse httpResponse = null;
         if (synchron) {
             try {
                 Response response = call.execute();
                 httpResponse = new HttpResponse();
-                httpResponse.setResponseBody(response.body());
+                httpResponse.setResponseType(type);
+                String string = null;
+                switch (type) {
+                    case String:
+                        try {
+                            string = response.body().string();
+                        } catch (IOException e) {
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                        httpResponse.setString(string);
+                        LogUtils.i("okresult: " + string);
+                        break;
+                    case InputStream:
+                        httpResponse.setInputStream(response.body().byteStream());
+                        break;
+                }
+                httpResponse.setString(string);
+                httpResponse.setContentLength(response.body().contentLength());
             } catch (Exception e) {
                 e.printStackTrace();
             }
         } else {
-            netWorkTask.setCall(call, tag, listener);
+            netWorkTask.setCall(type, method, call, tag, listener);
             TaskPool.getInstance().execute(netWorkTask);
         }
         return httpResponse;
@@ -242,11 +253,15 @@ public class OKHttp implements HttpBase {
 
     public class NetWorkTask extends Task {
         private Call mCall;
+        private HttpMethod mMethod;
+        private ResponseType mType;
 
-        public void setCall(Call call, Object tag, LoadListener listener) {
+        public void setCall(ResponseType type, HttpMethod method, Call call, Object tag, LoadListener listener) {
             mCall = call;
+            mMethod = method;
             setTag(tag);
             setListener(listener);
+            mType = type;
         }
 
         @Override
@@ -259,7 +274,25 @@ public class OKHttp implements HttpBase {
             try {
                 Response response = mCall.execute();
                 HttpResponse httpResponse = new HttpResponse();
-                httpResponse.setResponseBody(response.body());
+                String string = null;
+                httpResponse.setResponseType(mType);
+                switch (mType) {
+                    case String:
+                        try {
+                            string = response.body().string();
+                        } catch (IOException e) {
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                        httpResponse.setString(string);
+                        LogUtils.d("okresult: " + string+";contentLength="+response.body().contentLength());
+                        break;
+                    case InputStream:
+                        httpResponse.setInputStream(response.body().byteStream());
+                        break;
+                }
+                httpResponse.setString(string);
+                httpResponse.setContentLength(response.body().contentLength());
                 notifySuccess(httpResponse);
             } catch (Exception e) {
                 if (e.toString().toLowerCase().contains("canceled")
@@ -286,7 +319,24 @@ public class OKHttp implements HttpBase {
                 public void onResponse(Response response) throws IOException {
                     synchronized (NetWorkTask.this) {
                         HttpResponse httpResponse = new HttpResponse();
-                        httpResponse.setResponseBody(response.body());
+                        String string = null;
+                        switch (mType) {
+                            case String:
+                                try {
+                                    string = response.body().string();
+                                } catch (IOException e) {
+                                } catch (Exception e) {
+                                    e.printStackTrace();
+                                }
+                                httpResponse.setString(string);
+                                LogUtils.d("okresult: " + string);
+                                break;
+                            case InputStream:
+                                httpResponse.setInputStream(response.body().byteStream());
+                                break;
+                        }
+                        httpResponse.setString(string);
+                        httpResponse.setContentLength(response.body().contentLength());
                         NetWorkTask.this.notifySuccess(httpResponse);
                         NetWorkTask.this.notify();
                     }

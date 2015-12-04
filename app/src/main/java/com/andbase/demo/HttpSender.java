@@ -8,6 +8,7 @@ import com.andbase.demo.http.OKHttp;
 import com.andbase.demo.http.request.HttpMethod;
 import com.andbase.demo.http.request.HttpRequest;
 import com.andbase.demo.http.response.HttpResponse;
+import com.andbase.demo.http.response.ResponseType;
 import com.andbase.tractor.listener.LoadListener;
 import com.andbase.tractor.task.Task;
 import com.andbase.tractor.task.TaskPool;
@@ -21,7 +22,7 @@ import java.io.RandomAccessFile;
 import java.util.LinkedHashMap;
 
 /**
- * Created by Administrator on 2015/11/16.
+ * Created by huxq17 on 2015/11/16.
  */
 public class HttpSender {
     static HttpBase mHttpBase = new OKHttp();
@@ -36,6 +37,8 @@ public class HttpSender {
         builder.setStringParams(params);
         //如无特殊需求，这步可以省去
         builder.contentType("application/x-www-form-urlencoded").charSet("utf-8");
+        //网络请求返回的默认类型就是string,如果是String类型就不用设置，如果下载文件和加载图片需要用到InputStream，则设置为ResponseType.InputStream
+//        builder.setResponseType(ResponseType.InputStream);
         HttpRequest request = builder.build();
         mHttpBase.post(request, listener, tag);
     }
@@ -47,8 +50,6 @@ public class HttpSender {
         builder.url(url);
         addHeaders(builder, headers);
         builder.setParams(params);
-        //如无特殊需求，这步可以省去
-        builder.contentType("application/x-www-form-urlencoded").charSet("utf-8");
         HttpRequest request = builder.build();
         mHttpBase.post(request, listener, tag);
     }
@@ -61,15 +62,16 @@ public class HttpSender {
         HttpRequest.Builder builder = new HttpRequest.Builder();
         builder.url(url);
         addHeaders(builder, headers);
+        builder.setResponseType(ResponseType.String);
         mHttpBase.get(builder.build(), listener, tag);
     }
 
-    public static HttpResponse getSync(String url, LinkedHashMap<String, String> headers, String params, Object... tag) {
+    public static HttpResponse getInputStreamSync(String url, LinkedHashMap<String, String> headers, String params, Object... tag) {
         if (!TextUtils.isEmpty(params)) {
             url = url + "?" + params;
         }
         HttpRequest.Builder builder = new HttpRequest.Builder();
-        builder.url(url).synchron();
+        builder.url(url).synchron().setResponseType(ResponseType.InputStream);
         addHeaders(builder, headers);
         return mHttpBase.get(builder.build(), null, tag);
     }
@@ -196,7 +198,7 @@ public class HttpSender {
                     header.put("RANGE", "bytes=" + startposition + "-"
                             + endposition);
                 }
-                HttpResponse downloadResponse = getSync(url, header, null, null, tag);
+                HttpResponse downloadResponse = getInputStreamSync(url, header, null, null, tag);
                 InputStream inStream = null;
                 if (downloadResponse != null) {
                     inStream = downloadResponse.getInputStream();

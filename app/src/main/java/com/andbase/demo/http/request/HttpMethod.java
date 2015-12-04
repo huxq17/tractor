@@ -42,13 +42,6 @@ public enum HttpMethod {
                 || method == DELETE;
     }
 
-    public static boolean invalidatesCache(String method) {
-        return method.equals("POST")
-                || method.equals("PATCH")
-                || method.equals("PUT")
-                || method.equals("DELETE");
-    }
-
     @Override
     public String toString() {
         return this.value;

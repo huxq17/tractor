@@ -1,5 +1,7 @@
 package com.andbase.demo.http.request;
 
+import com.andbase.demo.http.response.ResponseType;
+
 import java.io.File;
 import java.util.LinkedHashMap;
 
@@ -12,6 +14,8 @@ public class HttpRequest {
     private RequestParams requestParams;
     private String url;
     private boolean synchron = false;
+    private ResponseType responseType;
+
 
     public HttpHeader getHeader() {
         return header;
@@ -28,8 +32,13 @@ public class HttpRequest {
     public String getUrl() {
         return url;
     }
-    public boolean isSynchron(){
+
+    public boolean isSynchron() {
         return synchron;
+    }
+
+    public ResponseType responseType() {
+        return responseType;
     }
 
     private HttpRequest(Builder builder) {
@@ -38,6 +47,7 @@ public class HttpRequest {
         this.requestParams = builder.requestParams;
         this.url = builder.url;
         this.synchron = builder.synchron;
+        this.responseType = builder.responseType;
     }
 
     public static class Builder {
@@ -46,15 +56,28 @@ public class HttpRequest {
         private RequestParams requestParams;
         private String url;
         private boolean synchron = false;
+        private ResponseType responseType;
 
         public Builder() {
             header = new HttpHeader();
             method = HttpMethod.GET;
             requestParams = new RequestParams();
+            responseType = ResponseType.String;
         }
 
         public Builder url(String url) {
             this.url = url;
+            return this;
+        }
+
+        /**
+         * 设置当网络请求成功以后返回的类型，默认是String
+         *
+         * @param responseType
+         * @return
+         */
+        public Builder setResponseType(ResponseType responseType) {
+            this.responseType = responseType;
             return this;
         }
 
@@ -64,14 +87,16 @@ public class HttpRequest {
         }
 
         /**
-         *  同步请求，默认为异步请求
+         * 设置为同步请求，默认为异步请求
+         *
          * @return
          */
-        public Builder synchron(){
+        public Builder synchron() {
             this.synchron = true;
             return this;
         }
-        public Builder setHeader(LinkedHashMap<String,String> header){
+
+        public Builder setHeader(LinkedHashMap<String, String> header) {
             this.header.setHeader(header);
             return this;
         }
@@ -81,7 +106,7 @@ public class HttpRequest {
             return this;
         }
 
-        public Builder setParams(LinkedHashMap<String,Object> params) {
+        public Builder setParams(LinkedHashMap<String, Object> params) {
             if (params == null) {
                 throw new RuntimeException("params==null");
             }
@@ -108,10 +133,12 @@ public class HttpRequest {
             requestParams.addParams(name, value);
             return this;
         }
-        public Builder addFile(File file){
+
+        public Builder addFile(File file) {
             requestParams.addFile(file);
             return this;
         }
+
         public Builder addFile(String name, File file) {
             requestParams.addFile(name, file);
             return this;
