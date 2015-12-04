@@ -30,10 +30,15 @@ public enum HttpMethod {
         return method == GET || method == POST;
     }
 
-    public static boolean permitsRequestBody(HttpMethod method) {
+    public static boolean requiresRequestBody(HttpMethod method) {
         return method == POST
                 || method == PUT
-                || method == PATCH
+                || method == PATCH;
+    }
+
+    public static boolean permitsRequestBody(HttpMethod method) {
+        return requiresRequestBody(method)
+                || method==OPTIONS
                 || method == DELETE;
     }
 

@@ -250,7 +250,6 @@ public class HttpSender {
 
             }
         });
-
     }
 
     public static void setFileLength(final String fileDir, final String fileName, long filelength) {

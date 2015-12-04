@@ -17,6 +17,7 @@ import com.andbase.tractor.task.Task;
 import com.andbase.tractor.task.TaskPool;
 import com.andbase.tractor.utils.LogUtils;
 import com.squareup.okhttp.Call;
+import com.squareup.okhttp.Callback;
 import com.squareup.okhttp.Headers;
 import com.squareup.okhttp.Interceptor;
 import com.squareup.okhttp.MediaType;
@@ -43,7 +44,7 @@ import java.util.concurrent.TimeUnit;
 public class OKHttp implements HttpBase {
 
     private static final OkHttpClient mOkHttpClient = new OkHttpClient();
-    private NetWorkTask netWorkTask = new NetWorkTask();
+    private NetWorkTask netWorkTask;
 
     static {
         mOkHttpClient.setRetryOnConnectionFailure(true);
@@ -69,8 +70,13 @@ public class OKHttp implements HttpBase {
         }
     }
 
+    public void prepareTask() {
+        netWorkTask = new NetWorkTask();
+    }
+
     @Override
     public HttpResponse get(HttpRequest request, LoadListener listener, Object... tag) {
+        prepareTask();
         String url = request.getUrl();
         RequestParams requestParams = request.getRequestParams();
         HttpHeader header = request.getHeader();
@@ -89,6 +95,7 @@ public class OKHttp implements HttpBase {
 
     @Override
     public HttpResponse post(HttpRequest request, LoadListener listener, Object... tag) {
+        prepareTask();
         String url = request.getUrl();
         RequestParams requestParams = request.getRequestParams();
         HttpHeader header = request.getHeader();
@@ -106,6 +113,7 @@ public class OKHttp implements HttpBase {
 
     @Override
     public HttpResponse request(HttpRequest request, LoadListener listener, Object... tag) {
+        prepareTask();
         String url = request.getUrl();
         RequestParams requestParams = request.getRequestParams();
         HttpHeader header = request.getHeader();
@@ -121,13 +129,20 @@ public class OKHttp implements HttpBase {
             throw new RuntimeException("contentType is empty || charset is empty");
         }
         addHeader(builder, header);
-        if (!TextUtils.isEmpty(params)) {
-            builder.method(method.toString(), RequestBody.create(MediaType.parse(contentType + ";" + charset), params));
-        }
-        switch (method) {
-            case HEAD:
-                builder.head();
-                break;
+
+        if (HttpMethod.permitsRequestBody(method)) {
+            if (HttpMethod.requiresRequestBody(method)) {
+                if (requestParams.isEmpty()) {
+                    throw new RuntimeException("method:" + method.toString() + "must have  prams");
+                }
+            }
+            if (!requestParams.isEmpty()) {
+                builder.method(method.toString(), buildRequestBody(requestParams));
+            } else {
+                builder.method(method.toString(), null);
+            }
+        } else {
+            builder.method(method.toString(), null);
         }
         addTag(builder, tag);
         return execute(builder.build(), synchron, listener, getTag(tag));
@@ -219,7 +234,7 @@ public class OKHttp implements HttpBase {
                 e.printStackTrace();
             }
         } else {
-            netWorkTask.setCall(call,tag,listener);
+            netWorkTask.setCall(call, tag, listener);
             TaskPool.getInstance().execute(netWorkTask);
         }
         return httpResponse;
@@ -228,7 +243,7 @@ public class OKHttp implements HttpBase {
     public class NetWorkTask extends Task {
         private Call mCall;
 
-        public void setCall(Call call,Object tag,LoadListener listener) {
+        public void setCall(Call call, Object tag, LoadListener listener) {
             mCall = call;
             setTag(tag);
             setListener(listener);
@@ -236,6 +251,11 @@ public class OKHttp implements HttpBase {
 
         @Override
         public void onRun() {
+            execute();
+//            enqueue();
+        }
+
+        private void execute() {
             try {
                 Response response = mCall.execute();
                 HttpResponse httpResponse = new HttpResponse();
@@ -249,6 +269,35 @@ public class OKHttp implements HttpBase {
                     notifyFail(e);
                 }
                 e.printStackTrace();
+            }
+        }
+
+        private void enqueue() {
+            mCall.enqueue(new Callback() {
+                @Override
+                public void onFailure(Request request, IOException e) {
+                    synchronized (NetWorkTask.this) {
+                        NetWorkTask.this.notifyFail(e);
+                        NetWorkTask.this.notify();
+                    }
+                }
+
+                @Override
+                public void onResponse(Response response) throws IOException {
+                    synchronized (NetWorkTask.this) {
+                        HttpResponse httpResponse = new HttpResponse();
+                        httpResponse.setResponseBody(response.body());
+                        NetWorkTask.this.notifySuccess(httpResponse);
+                        NetWorkTask.this.notify();
+                    }
+                }
+            });
+            synchronized (this) {
+                try {
+                    this.wait();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
             }
         }
 

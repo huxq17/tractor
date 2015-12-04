@@ -21,7 +21,7 @@ public class HttpResponse implements Serializable {
         if (responseBody != null) {
             try {
                 long length = responseBody.contentLength();
-                LogUtils.d(";length=" + length);
+                LogUtils.d("length=" + length);
                 return length;
             } catch (IOException e) {
                 e.printStackTrace();

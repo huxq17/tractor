@@ -25,6 +25,9 @@ public class RequestParams {
         mParams = new LinkedHashMap<>();
         mFiles = new ArrayList<>();
     }
+    public boolean isEmpty(){
+        return TextUtils.isEmpty(stringParams)&&mParams!=null&&mParams.size()==0&&mFiles!=null&&mFiles.size()==0;
+    }
 
     /**
      * 提交普通参数
