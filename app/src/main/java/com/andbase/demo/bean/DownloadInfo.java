@@ -6,8 +6,8 @@ import com.andbase.tractor.task.Task;
  * 记载下载器详细信息的类
  */
 public class DownloadInfo {
-    public long startPos;//开始点
-    public long endPos;//结束点
+    public long startPos = -1;//开始点
+    public long endPos = -1;//结束点
     public long compeleteSize;//完成度
     public String url;//下载器网络标识
     public long fileLength;

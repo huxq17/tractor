@@ -122,32 +122,42 @@ public class HttpSender {
                 notifyStart("开始下载...");
                 String url = info.url;
                 int threadNum = info.threadNum;
-                HttpResponse headResponse = headerSync(url, tag);
-                if (headResponse == null) {
-                    notifyFail("获取下载文件信息失败");
-                    return;
+                if (threadNum < 1) {
+                    throw new RuntimeException("threadNum<1");
                 }
-                long filelength = headResponse.getContentLength();
-                info.fileLength = filelength;
-                if (filelength < 0) {
-                    notifyFail("获取下载文件信息失败");
-                }
+                long block = -1;
                 final long starttime = System.currentTimeMillis();
-
-                long block = filelength % threadNum == 0 ? filelength / threadNum
-                        : filelength / threadNum + 1;
-                setFileLength(info.fileDir, info.filename, info.fileLength);
                 int freeMemory = ((int) Runtime.getRuntime().freeMemory());// 获取应用剩余可用内存
                 int allocated = freeMemory / 6 / threadNum;//给每个线程分配的内存
-                info.setTask(this);
                 LogUtils.d("spendTime allocated = " + allocated);
-                for (int i = 0; i < threadNum; i++) {
-                    final long startposition = i * block;
-                    final long endposition = (i + 1) * block - 1;
-                    info.startPos = startposition;
-                    info.endPos = endposition;
+                info.setTask(this);
+                if (threadNum > 1) {
+                    HttpResponse headResponse = headerSync(url, tag);
+                    if (headResponse == null) {
+                        notifyFail("获取下载文件信息失败");
+                        return;
+                    }
+                    long filelength = headResponse.getContentLength();
+                    info.fileLength = filelength;
+                    if (filelength < 0) {
+                        notifyFail("获取下载文件信息失败");
+                    }
+                    block = filelength % threadNum == 0 ? filelength / threadNum
+                            : filelength / threadNum + 1;
+                    setFileLength(info.fileDir, info.filename, info.fileLength);
+                    for (int i = 0; i < threadNum; i++) {
+                        final long startposition = i * block;
+                        final long endposition = (i + 1) * block - 1;
+                        info.startPos = startposition;
+                        info.endPos = endposition;
+                        downBlock(info, allocated, this, tag);
+                    }
+                } else {
+                    info.startPos = -1;
+                    info.endPos = -1;
                     downBlock(info, allocated, this, tag);
                 }
+
                 synchronized (this) {
                     try {
                         this.wait();
@@ -182,8 +192,10 @@ public class HttpSender {
             public void onRun() {
                 LogUtils.d("startposition=" + startposition + ";endposition=" + endposition);
                 LinkedHashMap<String, String> header = new LinkedHashMap<>();
-                header.put("RANGE", "bytes=" + startposition + "-"
-                        + endposition);
+                if (startposition != -1 && endposition != -1) {
+                    header.put("RANGE", "bytes=" + startposition + "-"
+                            + endposition);
+                }
                 HttpResponse downloadResponse = getSync(url, header, null, null, tag);
                 InputStream inStream = null;
                 if (downloadResponse != null) {
@@ -195,9 +207,15 @@ public class HttpSender {
                 RandomAccessFile accessFile = null;
                 try {
                     File saveFile = new File(filepath);
-                    accessFile = new RandomAccessFile(saveFile, "rwd");
-                    accessFile.seek(startposition);// 设置从什么位置开始写入数据
-
+                    if (startposition < 0) {
+                        info.fileLength = downloadResponse.getContentLength();
+                        setFileLength(info.fileDir, info.filename, info.fileLength);
+                        accessFile = new RandomAccessFile(saveFile, "rwd");
+                        accessFile.seek(0);
+                    } else {
+                        accessFile = new RandomAccessFile(saveFile, "rwd");
+                        accessFile.seek(startposition);
+                    }
                     byte[] buffer = new byte[allocated];
 //                    byte[] buffer = new byte[2048];
                     int len = 0;
