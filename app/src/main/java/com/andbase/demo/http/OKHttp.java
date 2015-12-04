@@ -126,7 +126,7 @@ public class OKHttp implements HttpBase {
         if (HttpMethod.permitsRequestBody(method)) {
             if (HttpMethod.requiresRequestBody(method)) {
                 if (requestParams.isEmpty()) {
-                    throw new RuntimeException("method:" + method.toString() + "must have  prams");
+                    throw new RuntimeException("method:" + method.toString() + "must have  params");
                 }
             }
             if (!requestParams.isEmpty()) {
