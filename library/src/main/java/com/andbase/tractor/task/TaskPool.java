@@ -12,12 +12,10 @@ import java.util.concurrent.Executors;
 public class TaskPool {
     private volatile LinkedList<Task> mTaskQueue = new LinkedList<Task>();
     private ThreadPool mThreadPool;
-    private ExecutorService mTimeCountService;
-    private ExecutorService mCancelService;
+    private ExecutorService mInternalService;
 
     private TaskPool() {
-        mTimeCountService = Executors.newCachedThreadPool();
-        mCancelService = Executors.newCachedThreadPool();
+        mInternalService = Executors.newCachedThreadPool();
     }
 
     public static TaskPool getInstance() {
@@ -70,10 +68,8 @@ public class TaskPool {
                 }
             }
         });
-        if (task instanceof TimeoutCountTask) {
-            mTimeCountService.execute(task);
-        } else if (task instanceof CancelTask) {
-            mCancelService.execute(task);
+        if (task instanceof TimeoutCountTask || task instanceof CancelTask) {
+            mInternalService.execute(task);
         } else {
             mThreadPool.execute(task);
         }

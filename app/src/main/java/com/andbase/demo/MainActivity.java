@@ -26,10 +26,11 @@ import java.util.Random;
  * Created by huxq17 on 2015/11/16.
  */
 public class MainActivity extends BaseActivity {
-    private String domin = "http://192.168.2.199:8080/";
+    private String domin = "http://192.168.2.103:8080/";
 //        private String domin = "http://192.168.2.103:8080/";
     private String downloadUrl = domin + "test/firetweet.apk";
     private String uploadUrl = domin + "UploadTest/Upload";
+    private String postUrl = domin + "UploadTest/index";
     private String sdcardPath;
 
     @Override
@@ -181,6 +182,14 @@ public class MainActivity extends BaseActivity {
                 }, this);
                 break;
             case R.id.bt_task_post_normal:
+                HttpSender.post(postUrl,null,"params",new LoadListenerImpl(){
+                    @Override
+                    public void onSuccess(Object result) {
+                        super.onSuccess(result);
+                        HttpResponse response = (HttpResponse) result;
+                        toast(response.string());
+                    }
+                },this);
                 break;
             case R.id.bt_task_upload:
                 String dir = sdcardPath + "/tractor/down/";
