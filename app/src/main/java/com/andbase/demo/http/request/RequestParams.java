@@ -127,8 +127,7 @@ public class RequestParams {
             return stringParams;
         }
         StringBuilder sb = new StringBuilder();
-        for (LinkedHashMap.Entry set :
-                mParams.entrySet()) {
+        for (LinkedHashMap.Entry set :mParams.entrySet()) {
             if (sb.length() > 0) {
                 sb.append("&");
             }
