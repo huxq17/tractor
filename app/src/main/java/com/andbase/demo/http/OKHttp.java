@@ -81,7 +81,7 @@ public class OKHttp implements HttpBase {
         addHeader(builder, header);
         addTag(builder, tag);
         ResponseType responseType = request.responseType();
-        return execute(responseType, HttpMethod.GET, builder.build(), synchron, listener, getTag(tag));
+        return execute(responseType, builder.build(), synchron, listener, getTag(tag));
     }
 
     @Override
@@ -101,7 +101,7 @@ public class OKHttp implements HttpBase {
         addHeader(builder, header);
         addTag(builder, tag);
         ResponseType responseType = request.responseType();
-        return execute(responseType, HttpMethod.POST, builder.build(), synchron, listener, getTag(tag));
+        return execute(responseType, builder.build(), synchron, listener, getTag(tag));
     }
 
     @Override
@@ -139,7 +139,7 @@ public class OKHttp implements HttpBase {
         }
         addTag(builder, tag);
         ResponseType responseType = request.responseType();
-        return execute(responseType, method, builder.build(), synchron, listener, getTag(tag));
+        return execute(responseType, builder.build(), synchron, listener, getTag(tag));
     }
 
     private RequestBody buildRequestBody(RequestParams requestParams) {
@@ -214,7 +214,7 @@ public class OKHttp implements HttpBase {
         return new Request.Builder();
     }
 
-    private HttpResponse execute(ResponseType type, HttpMethod method, Request request, boolean synchron, LoadListener listener, Object tag) {
+    private HttpResponse execute(ResponseType type, Request request, boolean synchron, LoadListener listener, Object tag) {
         final Call call = mOkHttpClient.newCall(request);
         HttpResponse httpResponse = null;
         if (synchron) {
@@ -244,7 +244,7 @@ public class OKHttp implements HttpBase {
                 e.printStackTrace();
             }
         } else {
-            netWorkTask.setCall(type, method, call, tag, listener);
+            netWorkTask.setCall(type, call, tag, listener);
             TaskPool.getInstance().execute(netWorkTask);
         }
         return httpResponse;
@@ -252,12 +252,10 @@ public class OKHttp implements HttpBase {
 
     public class NetWorkTask extends Task {
         private Call mCall;
-        private HttpMethod mMethod;
         private ResponseType mType;
 
-        public void setCall(ResponseType type, HttpMethod method, Call call, Object tag, LoadListener listener) {
+        public void setCall(ResponseType type, Call call, Object tag, LoadListener listener) {
             mCall = call;
-            mMethod = method;
             setTag(tag);
             setListener(listener);
             mType = type;
@@ -274,6 +272,7 @@ public class OKHttp implements HttpBase {
                 Response response = mCall.execute();
                 HttpResponse httpResponse = new HttpResponse();
                 String string = null;
+                httpResponse.setContentLength(response.body().contentLength());
                 httpResponse.setResponseType(mType);
                 switch (mType) {
                     case String:
@@ -290,8 +289,6 @@ public class OKHttp implements HttpBase {
                         httpResponse.setInputStream(response.body().byteStream());
                         break;
                 }
-                httpResponse.setString(string);
-                httpResponse.setContentLength(response.body().contentLength());
                 notifySuccess(httpResponse);
             } catch (Exception e) {
                 if (e.toString().toLowerCase().contains("canceled")
