@@ -35,7 +35,7 @@ public class HttpSender {
         builder.url(url);
         addHeaders(builder, headers);
         builder.setStringParams(params);
-        //如无特殊需求，这步可以省去
+        //如无特殊需求，这步可以省去，但如果传的参数是json则应该设置contentType为application/json
         builder.contentType("application/x-www-form-urlencoded").charSet("utf-8");
         //网络请求返回的默认类型就是string,如果是String类型就不用设置，如果下载文件和加载图片需要用到InputStream，则设置为ResponseType.InputStream
 //        builder.setResponseType(ResponseType.InputStream);

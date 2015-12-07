@@ -52,7 +52,7 @@ public class MainActivity extends BaseActivity {
 
     /**
      * Checks if the app has permission to write to device storage
-     * <p/>
+     * <p>
      * If the app does not has permission then the user will be prompted to grant permissions
      *
      * @param activity
@@ -80,7 +80,7 @@ public class MainActivity extends BaseActivity {
                     @Override
                     public void onStart(Object result) {
                         super.onStart(result);
-                        setMessage("任务开始");
+                        setMessage("任务开始执行");
                     }
 
                     @Override
@@ -125,7 +125,7 @@ public class MainActivity extends BaseActivity {
                     @Override
                     public void onCancel(Object result) {
                         super.onCancel(result);
-                        toast("任务被取消了");
+                        setMessage("任务被取消了");
                     }
 
                     @Override
@@ -184,7 +184,7 @@ public class MainActivity extends BaseActivity {
                 break;
             case R.id.bt_task_post_normal:
 
-                HttpSender.post(postUrl,null,getParams(),new LoadListenerImpl(){
+                HttpSender.post(postUrl, null, getParams(), new LoadListenerImpl() {
                     @Override
                     public void onSuccess(Object result) {
                         super.onSuccess(result);
@@ -372,13 +372,15 @@ public class MainActivity extends BaseActivity {
     public void doNormalPost(String url, String params, LoadListener listener, Object tag) {
         HttpSender.post(url, null, params, listener, tag);
     }
-    private LinkedHashMap<String,Object> getParams(){
+
+    private LinkedHashMap<String, Object> getParams() {
         LinkedHashMap<String, Object> params = new LinkedHashMap<>();
         params.put("int_params", 100);
         params.put("long_params", 20000L);
         params.put("string_params", "hello,I'm android");
         return params;
     }
+
     @Override
     protected void onPause() {
         super.onPause();

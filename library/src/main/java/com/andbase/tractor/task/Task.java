@@ -6,7 +6,6 @@ import com.andbase.tractor.Constants.Constants;
 import com.andbase.tractor.handler.LoadHandler;
 import com.andbase.tractor.listener.LoadListener;
 import com.andbase.tractor.utils.HandlerUtils;
-import com.andbase.tractor.utils.LogUtils;
 
 import java.lang.ref.WeakReference;
 
@@ -228,7 +227,6 @@ public abstract class Task implements Runnable {
     private void clear() {
         if (isRunning()) {
             if (timeoutCountTask != null && !timeoutCountTask.hasFinished()) {
-                LogUtils.d("clear task");
                 timeoutCountTask.cancel();
             }
             if (mLifeCycleListener != null) {
