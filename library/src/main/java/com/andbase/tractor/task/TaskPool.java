@@ -49,10 +49,10 @@ public class TaskPool {
      * @param task 要执行的任务
      */
     public void execute(Task task) {
-        initExecutorService(null);
         if (task == null) {
             return;
         }
+        initExecutorService(null);
         task.setLiftCycleListener(new Task.TaskLifeCycleListener() {
             @Override
             public void onStart(Task task) {

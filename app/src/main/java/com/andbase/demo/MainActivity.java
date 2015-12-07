@@ -20,14 +20,15 @@ import com.andbase.tractor.utils.LogUtils;
 import com.andbase.tractor.utils.Util;
 
 import java.io.File;
+import java.util.LinkedHashMap;
 import java.util.Random;
 
 /**
  * Created by huxq17 on 2015/11/16.
  */
 public class MainActivity extends BaseActivity {
-    private String domin = "http://192.168.2.103:8080/";
-//        private String domin = "http://192.168.2.103:8080/";
+    private String domin = "http://192.168.2.199:8080/";
+    //        private String domin = "http://192.168.2.103:8080/";
     private String downloadUrl = domin + "test/firetweet.apk";
     private String uploadUrl = domin + "UploadTest/Upload";
     private String postUrl = domin + "UploadTest/index";
@@ -51,7 +52,7 @@ public class MainActivity extends BaseActivity {
 
     /**
      * Checks if the app has permission to write to device storage
-     * <p/>
+     * <p>
      * If the app does not has permission then the user will be prompted to grant permissions
      *
      * @param activity
@@ -79,7 +80,7 @@ public class MainActivity extends BaseActivity {
                     @Override
                     public void onStart(Object result) {
                         super.onStart(result);
-                        setMessage("任务开始");
+                        setMessage("任务开始执行");
                     }
 
                     @Override
@@ -124,7 +125,7 @@ public class MainActivity extends BaseActivity {
                     @Override
                     public void onCancel(Object result) {
                         super.onCancel(result);
-                        toast("任务被取消了");
+                        setMessage("任务被取消了");
                     }
 
                     @Override
@@ -182,14 +183,20 @@ public class MainActivity extends BaseActivity {
                 }, this);
                 break;
             case R.id.bt_task_post_normal:
-                HttpSender.post(postUrl,null,"params",new LoadListenerImpl(){
+
+                HttpSender.post(postUrl, null, getParams(), new LoadListenerImpl() {
                     @Override
                     public void onSuccess(Object result) {
                         super.onSuccess(result);
                         HttpResponse response = (HttpResponse) result;
                         toast(response.string());
                     }
-                },this);
+
+                    @Override
+                    public void onFail(Object result) {
+                        super.onFail(result);
+                    }
+                });
                 break;
             case R.id.bt_task_upload:
                 String dir = sdcardPath + "/tractor/down/";
@@ -199,7 +206,8 @@ public class MainActivity extends BaseActivity {
                     return;
                 }
                 File[] files = file.listFiles();
-                HttpSender.upload(uploadUrl, null, files, new LoadListenerImpl(this) {
+
+                HttpSender.upload(uploadUrl, null, files, getParams(), new LoadListenerImpl(this) {
                     @Override
                     public void onStart(Object result) {
                         super.onStart(result);
@@ -363,6 +371,14 @@ public class MainActivity extends BaseActivity {
 
     public void doNormalPost(String url, String params, LoadListener listener, Object tag) {
         HttpSender.post(url, null, params, listener, tag);
+    }
+
+    private LinkedHashMap<String, Object> getParams() {
+        LinkedHashMap<String, Object> params = new LinkedHashMap<>();
+        params.put("int_params", 100);
+        params.put("long_params", 20000L);
+        params.put("string_params", "hello,I'm android");
+        return params;
     }
 
     @Override
