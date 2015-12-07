@@ -20,6 +20,7 @@ import com.andbase.tractor.utils.LogUtils;
 import com.andbase.tractor.utils.Util;
 
 import java.io.File;
+import java.util.LinkedHashMap;
 import java.util.Random;
 
 /**
@@ -27,9 +28,10 @@ import java.util.Random;
  */
 public class MainActivity extends BaseActivity {
     private String domin = "http://192.168.2.199:8080/";
-//        private String domin = "http://192.168.2.103:8080/";
+    //        private String domin = "http://192.168.2.103:8080/";
     private String downloadUrl = domin + "test/firetweet.apk";
     private String uploadUrl = domin + "UploadTest/Upload";
+    private String postUrl = domin + "UploadTest/index";
     private String sdcardPath;
 
     @Override
@@ -181,6 +183,20 @@ public class MainActivity extends BaseActivity {
                 }, this);
                 break;
             case R.id.bt_task_post_normal:
+
+                HttpSender.post(postUrl,null,getParams(),new LoadListenerImpl(){
+                    @Override
+                    public void onSuccess(Object result) {
+                        super.onSuccess(result);
+                        HttpResponse response = (HttpResponse) result;
+                        toast(response.string());
+                    }
+
+                    @Override
+                    public void onFail(Object result) {
+                        super.onFail(result);
+                    }
+                });
                 break;
             case R.id.bt_task_upload:
                 String dir = sdcardPath + "/tractor/down/";
@@ -190,7 +206,8 @@ public class MainActivity extends BaseActivity {
                     return;
                 }
                 File[] files = file.listFiles();
-                HttpSender.upload(uploadUrl, null, files, new LoadListenerImpl(this) {
+
+                HttpSender.upload(uploadUrl, null, files, getParams(), new LoadListenerImpl(this) {
                     @Override
                     public void onStart(Object result) {
                         super.onStart(result);
@@ -355,7 +372,13 @@ public class MainActivity extends BaseActivity {
     public void doNormalPost(String url, String params, LoadListener listener, Object tag) {
         HttpSender.post(url, null, params, listener, tag);
     }
-
+    private LinkedHashMap<String,Object> getParams(){
+        LinkedHashMap<String, Object> params = new LinkedHashMap<>();
+        params.put("int_params", 100);
+        params.put("long_params", 20000L);
+        params.put("string_params", "hello,I'm android");
+        return params;
+    }
     @Override
     protected void onPause() {
         super.onPause();

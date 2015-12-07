@@ -97,7 +97,7 @@ public class HttpSender {
 
     public static void upload(String url, LinkedHashMap<String, String> headers, File[] files, LinkedHashMap<String, Object> params, LoadListener listener, Object tag) {
         HttpRequest.Builder builder = new HttpRequest.Builder();
-        builder.url(url);
+        builder.url(url).setParams(params);
         addHeaders(builder, headers);
         for (File file : files) {
             builder.addFile(file);

@@ -113,7 +113,7 @@ public class OKHttp implements HttpBase {
         boolean synchron = request.isSynchron();
 
         HttpMethod method = request.getMethod();
-        LogUtils.d(method.toString()+" url=" + url);
+        LogUtils.d(method.toString() + " url=" + url);
         Request.Builder builder = getBuilder().url(url);
         String contentType = requestParams.getContentType();
         String charset = requestParams.getCharSet();
@@ -151,8 +151,8 @@ public class OKHttp implements HttpBase {
         if (params == null || TextUtils.isEmpty(contentType) || TextUtils.isEmpty(charset)) {
             throw new RuntimeException("params is null");
         }
-        LogUtils.d("upload file.size=" + files.size());
         if (files != null && files.size() > 0) {
+            LogUtils.d("upload file.size=" + files.size());
             MultipartBuilder builder = new MultipartBuilder()
                     .type(MultipartBuilder.FORM);
             for (FileBody body : files) {
@@ -167,16 +167,15 @@ public class OKHttp implements HttpBase {
             }
             for (LinkedHashMap.Entry set : paramsHashmap.entrySet()) {
                 Object value = set.getValue();
-                if (value instanceof String) {
-                    builder.addPart(Headers.of("Content-Disposition", "form-data; name=\"" + set.getKey() + "\""),
-                            RequestBody.create(null, value.toString()));
-                }
+                builder.addPart(Headers.of("Content-Disposition", "form-data; name=\"" + set.getKey() + "\""),
+                        RequestBody.create(null, value.toString()));
             }
-
-            return new CountingRequestBody(builder.build(), netWorkTask);
+            RequestBody requestBody = new CountingRequestBody(builder.build(), netWorkTask);
+            return requestBody;
 //            return builder.build();
         } else {
-            return RequestBody.create(MediaType.parse(contentType + ";" + charset), params);
+            LogUtils.i("params="+params+";mediaType="+contentType + "; charset=" + charset);
+            return RequestBody.create(MediaType.parse(contentType + "; charset=" + charset), params);
         }
     }
 
@@ -285,7 +284,7 @@ public class OKHttp implements HttpBase {
                             e.printStackTrace();
                         }
                         httpResponse.setString(string);
-                        LogUtils.d("okresult: " + string+";contentLength="+response.body().contentLength());
+                        LogUtils.d("okresult: " + string + ";contentLength=" + response.body().contentLength());
                         break;
                     case InputStream:
                         httpResponse.setInputStream(response.body().byteStream());
