@@ -19,19 +19,35 @@ public class LoadListenerImpl implements LoadListener {
     private String mMessage = "加载中...";
     private long mDismissTime = 500;
 
+    /**
+     * 不显示progressdialog
+     */
     public LoadListenerImpl() {
     }
 
-    public void setProgressDialog(ProgressDialog progressDialog) {
-        mProgressDialog = progressDialog;
-    }
-
+    /**
+     * 显示progressdialog，其上显示的文字是默认的
+     * @param context
+     */
     public LoadListenerImpl(Context context) {
         init(context, null);
     }
 
+    /**
+     * 显示progressdialog,其上显示的文字是message
+     * @param context
+     * @param message
+     */
     public LoadListenerImpl(Context context, String message) {
         init(context, message);
+    }
+
+    /**
+     * 设置自定义的progressdialog，如果不设置则使用tractor自带的
+     * @param progressDialog
+     */
+    public void setProgressDialog(ProgressDialog progressDialog) {
+        mProgressDialog = progressDialog;
     }
 
     private void init(Context context, String message) {
