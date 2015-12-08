@@ -7,6 +7,6 @@
 
 ```groovy
 dependencies {
-   compile 'com.andbase.tractor:tractor:0.0.2'
+   compile 'com.andbase.tractor:tractor:0.0.3'
 }
 ```
