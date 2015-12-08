@@ -11,10 +11,12 @@ import com.andbase.tractor.listener.LoadListener;
 import com.andbase.tractor.task.Task;
 import com.andbase.tractor.task.TaskPool;
 
+import java.lang.ref.WeakReference;
+
 public class LoadListenerImpl implements LoadListener {
-    private Context context;
+    private WeakReference<Context> context;
     private ProgressDialog mProgressDialog;
-    private String mMessage;
+    private String mMessage = "加载中...";
     private long mDismissTime = 500;
 
     public LoadListenerImpl() {
@@ -25,16 +27,19 @@ public class LoadListenerImpl implements LoadListener {
     }
 
     public LoadListenerImpl(Context context) {
-        this.context = context;
-        if (context != null) {
-            initProgressDialog(null);
-        }
+        init(context, null);
     }
 
     public LoadListenerImpl(Context context, String message) {
-        this.context = context;
-        mMessage = message;
+        init(context, message);
+    }
+
+    private void init(Context context, String message) {
+        if (message != null) {
+            mMessage = message;
+        }
         if (context != null) {
+            this.context = new WeakReference<>(context);
             initProgressDialog(message);
         }
     }
@@ -110,8 +115,8 @@ public class LoadListenerImpl implements LoadListener {
     }
 
     private void initProgressDialog(String msg) {
-        if (null == mProgressDialog) {
-            mProgressDialog = new LittleDialog(context, msg, new OnClickListener() {
+        if (null == mProgressDialog && context != null && context.get() != null) {
+            mProgressDialog = new LittleDialog(context.get(), msg, new OnClickListener() {
                 @Override
                 public void onClick(View v) {
                     onCancelClick();
