@@ -1,4 +1,4 @@
-# tractor
+﻿# tractor
 轻量级的任务管理器
 ###Usage
 ----
@@ -252,7 +252,7 @@ TaskPool.getInstance().cancelTask(tag|task);
 ![上传打文件](http://img.my.csdn.net/uploads/201512/09/1449628980_4123.gif)
 
 ##**最后**
-如果你有什么问题和建议可以留言或者给我发邮件。我的博客地址：[https://github.com/huxq17/tractor](https://github.com/huxq17/tractor)
+如果你有什么问题和建议可以留言或者给我发邮件。我的博客地址：[http://blog.csdn.net/footballclub](http://blog.csdn.net/footballclub)
 
 
 ## License
