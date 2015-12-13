@@ -1,8 +1,11 @@
 package com.andbase.demo;
 
+import android.content.Context;
 import android.text.TextUtils;
 
+import com.andbase.demo.bean.BloackInfo;
 import com.andbase.demo.bean.DownloadInfo;
+import com.andbase.demo.db.DBService;
 import com.andbase.demo.http.HttpBase;
 import com.andbase.demo.http.OKHttp;
 import com.andbase.demo.http.request.HttpMethod;
@@ -20,6 +23,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.RandomAccessFile;
 import java.util.LinkedHashMap;
+import java.util.List;
 
 /**
  * Created by huxq17 on 2015/11/16.
@@ -117,7 +121,7 @@ public class HttpSender {
      * @param listener
      * @param tag
      */
-    public static void download(final DownloadInfo info, final LoadListener listener, final Object tag) {
+    public static void download(final DownloadInfo info, final Context context, final LoadListener listener, final Object tag) {
         TaskPool.getInstance().execute(new Task(tag, listener) {
             @Override
             public void onRun() {
@@ -133,6 +137,8 @@ public class HttpSender {
                 int allocated = freeMemory / 6 / threadNum;//给每个线程分配的内存
                 LogUtils.d("spendTime allocated = " + allocated);
                 info.setTask(this);
+                int completed = 0;
+                List<BloackInfo> donelist = DBService.getInstance(context).getInfos(url);
                 if (threadNum > 1) {
                     HttpResponse headResponse = headerSync(url, tag);
                     if (headResponse == null) {
@@ -151,6 +157,12 @@ public class HttpSender {
                         final long startposition = i * block;
                         final long endposition = (i + 1) * block - 1;
                         info.startPos = startposition;
+                        if (i < donelist.size()) {
+                            int done = donelist.get(i).getCompeleteSize();
+                            info.startPos += done;
+                            completed += done;
+                            //TODO 此处应该考虑线程数目变化的情况
+                        }
                         info.endPos = endposition;
                         downBlock(info, allocated, this, tag);
                     }
@@ -158,6 +170,12 @@ public class HttpSender {
                     info.startPos = -1;
                     info.endPos = -1;
                     downBlock(info, allocated, this, tag);
+                    for (BloackInfo blockInfo:donelist) {
+                        completed +=blockInfo.getCompeleteSize();
+                    }
+                }
+                if (completed > 0) {
+                    info.compute(completed);
                 }
 
                 synchronized (this) {

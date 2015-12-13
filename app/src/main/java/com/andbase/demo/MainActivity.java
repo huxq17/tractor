@@ -27,8 +27,8 @@ import java.util.Random;
  * Created by huxq17 on 2015/11/16.
  */
 public class MainActivity extends BaseActivity {
-    private String domin = "http://192.168.2.199:8080/";
-    //        private String domin = "http://192.168.2.103:8080/";
+    //    private String domin = "http://192.168.2.199:8080/";
+    private String domin = "http://192.168.2.103:8080/";
     private String downloadUrl = domin + "test/firetweet.apk";
     private String uploadUrl = domin + "UploadTest/Upload";
     private String postUrl = domin + "UploadTest/index";
@@ -52,7 +52,7 @@ public class MainActivity extends BaseActivity {
 
     /**
      * Checks if the app has permission to write to device storage
-     * <p>
+     * <p/>
      * If the app does not has permission then the user will be prompted to grant permissions
      *
      * @param activity
@@ -259,7 +259,7 @@ public class MainActivity extends BaseActivity {
                 final String filename = Util.getFilename(downloadUrl);
                 final int threadNum = 3;
                 DownloadInfo info = new DownloadInfo(downloadUrl, filedir, filename, threadNum);
-                HttpSender.download(info, new LoadListenerImpl(this) {
+                HttpSender.download(info, getApplicationContext(), new LoadListenerImpl(this) {
                     @Override
                     public void onStart(Object result) {
                         super.onStart(result);
@@ -321,7 +321,7 @@ public class MainActivity extends BaseActivity {
      * @param tag
      */
     public void doNormalTask(LoadListener listener, Object tag) {
-        TaskPool.getInstance().execute(new Task(tag, listener) {
+        Task normalTask = new Task(tag, listener) {
             @Override
             public void onRun() {
                 SystemClock.sleep(500);
@@ -343,7 +343,9 @@ public class MainActivity extends BaseActivity {
             public void cancelTask() {
 
             }
-        });
+        };
+        //执行任务，最终是由线程池来执行任务
+        TaskPool.getInstance().execute(normalTask);
     }
 
     /**
