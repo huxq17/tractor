@@ -6,6 +6,7 @@ import android.database.sqlite.SQLiteDatabase;
 import android.util.Log;
 
 import com.andbase.demo.bean.BloackInfo;
+import com.andbase.tractor.utils.LogUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -109,13 +110,15 @@ public class DBService {
 	/**
 	 * 更新数据库中的下载信息
 	 */
-	public synchronized void updataInfos(int threadId, int compeleteSize, String urlstr) {
+	public synchronized void updataInfos(int threadId, long completeSize, String url) {
 		SQLiteDatabase database = dbHelper.getReadableDatabase();
 		// 如果存在就更新，不存在就插入
 		String sql = "replace into download_info"
 				+ "(compelete_size,thread_id,url) values(?,?,?)";
-		Object[] bindArgs = { compeleteSize, threadId, urlstr };
+		int done = (int) completeSize;
+		Object[] bindArgs = { done, threadId, url };
 		database.execSQL(sql, bindArgs);
+		LogUtils.i("update threadid="+threadId+";completed="+completeSize);
 	}
 
 	/**
