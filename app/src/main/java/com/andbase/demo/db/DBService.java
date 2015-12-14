@@ -5,7 +5,7 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.util.Log;
 
-import com.andbase.demo.bean.BloackInfo;
+import com.andbase.demo.bean.DownloadInfo;
 import com.andbase.tractor.utils.LogUtils;
 
 import java.util.ArrayList;
@@ -40,15 +40,15 @@ public class DBService {
     /**
      * 得到下载具体信息
      */
-    public List<BloackInfo> getInfos(String urlstr) {
-        List<BloackInfo> list = new ArrayList<BloackInfo>();
+    public List<DownloadInfo> getInfos(String urlstr) {
+        List<DownloadInfo> list = new ArrayList<DownloadInfo>();
         SQLiteDatabase database = dbHelper.getReadableDatabase();
-        String sql = "select thread_id,compelete_size,total_size,url"
+        String sql = "select thread_id,startposition,endposition,total_size,url"
                 + " from download_info where url=?";
         Cursor cursor = database.rawQuery(sql, new String[]{urlstr});
         while (cursor.moveToNext()) {
-            BloackInfo info = new BloackInfo(cursor.getInt(0), cursor.getInt(1),cursor.getLong(2),
-                    cursor.getString(3));
+            DownloadInfo info = new DownloadInfo(cursor.getInt(0), cursor.getInt(1), cursor.getLong(2), cursor.getInt(3),
+                    cursor.getString(4));
             list.add(info);
         }
         cursor.close();
@@ -59,14 +59,14 @@ public class DBService {
     /**
      * 更新数据库中的下载信息
      */
-    public synchronized void updataInfos(int threadId, long completeSize, String url) {
+    public synchronized void updataInfos(int threadId, long startposition, long endposition, String url) {
         SQLiteDatabase database = dbHelper.getReadableDatabase();
         // 如果存在就更新，不存在就插入
         String sql = "replace into download_info"
-                + "(compelete_size,thread_id,url) values(?,?,?)";
-        Object[] bindArgs = {completeSize, threadId, url};
+                + "(thread_id,startposition,endposition,url) values(?,?,?,?)";
+        Object[] bindArgs = {threadId, startposition, endposition, url};
         database.execSQL(sql, bindArgs);
-        LogUtils.i("update threadid=" + threadId + ";completed=" + completeSize);
+        LogUtils.i("update threadid=" + threadId + ";startposition=" + startposition + ";endposition=" + endposition);
     }
 
     /**

@@ -27,6 +27,15 @@ public class DownloadInfo {
         this.threadNum = threadNum;
     }
 
+    public DownloadInfo(int downloadId,
+                        long startPosition, long endPosition, long totalSize, String url) {
+        this.downloadId = downloadId;
+        this.startPos = startPosition;
+        this.endPos = endPosition;
+        this.fileLength = totalSize;
+        this.url = url;
+    }
+
     /**
      * 计算进度，并通知ui更新
      *

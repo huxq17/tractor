@@ -16,7 +16,7 @@ public class DBHelper extends SQLiteOpenHelper {
 	@Override
 	public void onCreate(SQLiteDatabase db) {
 		db.execSQL("create table download_info(thread_id integer, "
-				+ "compelete_size integer,total_size integer,url char," +
+				+ "startposition integer,endposition integer,total_size integer,url char," +
 				"primary key(thread_id,url))");
 	}
 

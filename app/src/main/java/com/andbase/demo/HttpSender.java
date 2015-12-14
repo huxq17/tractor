@@ -3,7 +3,6 @@ package com.andbase.demo;
 import android.content.Context;
 import android.text.TextUtils;
 
-import com.andbase.demo.bean.BloackInfo;
 import com.andbase.demo.bean.DownloadInfo;
 import com.andbase.demo.db.DBService;
 import com.andbase.demo.http.HttpBase;
@@ -146,7 +145,7 @@ public class HttpSender {
                 LogUtils.d("spendTime allocated = " + allocated);
                 info.setTask(this);
                 int completed = 0;
-                List<BloackInfo> donelist = DBService.getInstance(context).getInfos(url);
+                List<DownloadInfo> donelist = DBService.getInstance(context).getInfos(url);
                 if (threadNum > 1) {
                     HttpResponse headResponse = headerSync(url, tag);
                     if (headResponse == null) {
@@ -165,28 +164,27 @@ public class HttpSender {
                         final long startposition = i * block;
                         final long endposition = (i + 1) * block - 1;
                         info.startPos = startposition;
+                        info.endPos = endposition;
                         if (i < donelist.size()) {
-                            BloackInfo bloackInfo = donelist.get(i);
-                            int done = bloackInfo.getCompeleteSize();
-                            info.downloadId = bloackInfo.getThreadId();
-                            info.startPos += done;
-                            completed += done;
-                            info.completeSize = done;
+                            DownloadInfo blockInfo = donelist.get(i);
+                            info.downloadId = blockInfo.downloadId;
+                            completed += blockInfo.startPos-info.startPos;
+                            info.startPos = blockInfo.startPos;
+                            info.endPos = blockInfo.endPos;
                             //TODO 此处应该考虑线程数目变化的情况
                         } else {
                             info.downloadId = i;
                         }
-                        LogUtils.i("update done = " + info.completeSize + ";start=" + startposition + ";end=" + endposition + ";filelength=" + filelength
+                        LogUtils.i("update done = " + completed + ";start=" + info.startPos + ";end=" + endposition + ";filelength=" + filelength
                                 + ";donelist.size=" + donelist.size());
-                        info.endPos = endposition;
                         downBlock(info, context, allocated, this, tag);
                     }
                 } else {
                     info.startPos = -1;
                     info.endPos = -1;
                     downBlock(info, context, allocated, this, tag);
-                    for (BloackInfo blockInfo : donelist) {
-                        completed += blockInfo.getCompeleteSize();
+                    for (DownloadInfo blockInfo : donelist) {
+                        completed += blockInfo.completeSize;
                     }
                 }
                 if (completed > 0) {
@@ -225,9 +223,9 @@ public class HttpSender {
         final String url = info.url;
         final String filepath = info.filePath;
         final int downloadId = info.downloadId;
-        final long completeSize = info.completeSize;
         TaskPool.getInstance().execute(new Task() {
             private int count = 0;
+            private long curPos = startposition;
 
             @Override
             public void onRun() {
@@ -260,18 +258,37 @@ public class HttpSender {
                     byte[] buffer = new byte[allocated];
 //                    byte[] buffer = new byte[2048];
                     int len = 0;
-                    while ((len = inStream.read(buffer)) != -1) {
-                        accessFile.write(buffer, 0, len);
-                        // 实时更新进度
-                        LogUtils.d("len=" + len);
+                    while (curPos < endposition) {
+                        len = inStream.read(buffer);
+                        if (len == -1) {
+                            notifyDownloadFailed(null);
+                            break;
+                        }
+                        if (curPos + len > endposition) {
+                            len = (int) (endposition - curPos + 1);//获取正确读取的字节数
+                        }
+                        LogUtils.d("len=" + len+";curPos="+curPos+";end="+endposition+"id="+downloadId);
                         count += len;
+                        curPos += len;
+                        accessFile.write(buffer, 0, len);
                         if (!info.compute(len)) {
                             //当下载任务失败以后结束此下载线程
-                            LogUtils.i("停止下载 update start=" + startposition + ";end=" + endposition + ";count=" + count);
-                            DBService.getInstance(context).updataInfos(downloadId, completeSize + count, url);
+                            DBService.getInstance(context).updataInfos(downloadId, curPos,endposition, url);
                             break;
                         }
                     }
+//                    while ((len = inStream.read(buffer)) != -1) {
+//                        accessFile.write(buffer, 0, len);
+//                        // 实时更新进度
+//                        LogUtils.d("len=" + len);
+//                        count += len;
+//                        if (!info.compute(len)) {
+//                            //当下载任务失败以后结束此下载线程
+//                            DBService.getInstance(context).updataInfos(downloadId, completeSize + count, url);
+//                            break;
+//                        }
+//                    }
+                    LogUtils.i("停止下载 update start=" + curPos + ";end=" + endposition+";id="+downloadId);
                 } catch (Exception e) {
                     e.printStackTrace();
                     notifyDownloadFailed(e);
@@ -282,7 +299,7 @@ public class HttpSender {
             }
 
             private void notifyDownloadFailed(Exception e) {
-                DBService.getInstance(context).updataInfos(downloadId, completeSize + count, url);
+                DBService.getInstance(context).updataInfos(downloadId, curPos,endposition, url);
                 task.notifyFail(e);
                 synchronized (task) {
                     task.notify();
