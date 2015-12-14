@@ -31,10 +31,18 @@ import java.util.List;
 public class HttpSender {
     static HttpBase mHttpBase = new OKHttp();
 
+    private static class InstanceHolder {
+        private static HttpSender instance = new HttpSender();
+    }
 
-    public static void post(final String url,
-                            LinkedHashMap<String, String> headers, final String params,
-                            final LoadListener listener, Object... tag) {
+    public static HttpSender instance() {
+        return InstanceHolder.instance;
+    }
+
+
+    public void post(final String url,
+                     LinkedHashMap<String, String> headers, final String params,
+                     final LoadListener listener, Object... tag) {
         HttpRequest.Builder builder = new HttpRequest.Builder();
         builder.url(url);
         addHeaders(builder, headers);
@@ -47,9 +55,9 @@ public class HttpSender {
         mHttpBase.post(request, listener, tag);
     }
 
-    public static void post(final String url,
-                            LinkedHashMap<String, String> headers, LinkedHashMap<String, Object> params,
-                            LoadListener listener, Object... tag) {
+    public void post(final String url,
+                     LinkedHashMap<String, String> headers, LinkedHashMap<String, Object> params,
+                     LoadListener listener, Object... tag) {
         HttpRequest.Builder builder = new HttpRequest.Builder();
         builder.url(url);
         addHeaders(builder, headers);
@@ -58,8 +66,8 @@ public class HttpSender {
         mHttpBase.post(request, listener, tag);
     }
 
-    public static void get(String url, LinkedHashMap<String, String> headers, String params,
-                           final LoadListener listener, Object... tag) {
+    public void get(String url, LinkedHashMap<String, String> headers, String params,
+                    final LoadListener listener, Object... tag) {
         if (!TextUtils.isEmpty(params)) {
             url = url + "?" + params;
         }
@@ -70,7 +78,7 @@ public class HttpSender {
         mHttpBase.get(builder.build(), listener, tag);
     }
 
-    public static HttpResponse getInputStreamSync(String url, LinkedHashMap<String, String> headers, String params, Object... tag) {
+    public HttpResponse getInputStreamSync(String url, LinkedHashMap<String, String> headers, String params, Object... tag) {
         if (!TextUtils.isEmpty(params)) {
             url = url + "?" + params;
         }
@@ -80,7 +88,7 @@ public class HttpSender {
         return mHttpBase.get(builder.build(), null, tag);
     }
 
-    public static void header(String url, LoadListener listener, Object... tag) {
+    public void header(String url, LoadListener listener, Object... tag) {
         HttpRequest.Builder builder = new HttpRequest.Builder();
         builder.url(url).method(HttpMethod.HEAD);
         mHttpBase.request(builder.build(), listener, tag);
@@ -92,14 +100,14 @@ public class HttpSender {
      * @param url
      * @param tag
      */
-    public static HttpResponse headerSync(String url, Object... tag) {
+    public HttpResponse headerSync(String url, Object... tag) {
         HttpRequest.Builder builder = new HttpRequest.Builder();
         builder.url(url).synchron().method(HttpMethod.HEAD);
         HttpResponse response = mHttpBase.request(builder.build(), null, tag);
         return response;
     }
 
-    public static void upload(String url, LinkedHashMap<String, String> headers, File[] files, LinkedHashMap<String, Object> params, LoadListener listener, Object tag) {
+    public void upload(String url, LinkedHashMap<String, String> headers, File[] files, LinkedHashMap<String, Object> params, LoadListener listener, Object tag) {
         HttpRequest.Builder builder = new HttpRequest.Builder();
         builder.url(url).setParams(params);
         addHeaders(builder, headers);
@@ -109,7 +117,7 @@ public class HttpSender {
         mHttpBase.post(builder.build(), listener, tag);
     }
 
-    public static void upload(String url, LinkedHashMap<String, String> headers, File[] files, LoadListener listener, Object tag) {
+    public void upload(String url, LinkedHashMap<String, String> headers, File[] files, LoadListener listener, Object tag) {
         upload(url, headers, files, null, listener, tag);
     }
 
@@ -121,7 +129,7 @@ public class HttpSender {
      * @param listener
      * @param tag
      */
-    public static void download(final DownloadInfo info, final Context context, final LoadListener listener, final Object tag) {
+    public void download(final DownloadInfo info, final Context context, final LoadListener listener, final Object tag) {
         TaskPool.getInstance().execute(new Task(tag, listener) {
             @Override
             public void onRun() {
@@ -158,23 +166,31 @@ public class HttpSender {
                         final long endposition = (i + 1) * block - 1;
                         info.startPos = startposition;
                         if (i < donelist.size()) {
-                            int done = donelist.get(i).getCompeleteSize();
+                            BloackInfo bloackInfo = donelist.get(i);
+                            int done = bloackInfo.getCompeleteSize();
+                            info.downloadId = bloackInfo.getThreadId();
                             info.startPos += done;
                             completed += done;
+                            info.completeSize = done;
                             //TODO 此处应该考虑线程数目变化的情况
+                        } else {
+                            info.downloadId = i;
                         }
+                        LogUtils.i("update done = " + info.completeSize + ";start=" + startposition + ";end=" + endposition + ";filelength=" + filelength
+                                + ";donelist.size=" + donelist.size());
                         info.endPos = endposition;
-                        downBlock(info, allocated, this, tag);
+                        downBlock(info, context, allocated, this, tag);
                     }
                 } else {
                     info.startPos = -1;
                     info.endPos = -1;
-                    downBlock(info, allocated, this, tag);
-                    for (BloackInfo blockInfo:donelist) {
-                        completed +=blockInfo.getCompeleteSize();
+                    downBlock(info, context, allocated, this, tag);
+                    for (BloackInfo blockInfo : donelist) {
+                        completed += blockInfo.getCompeleteSize();
                     }
                 }
                 if (completed > 0) {
+                    info.completeSize = 0;
                     info.compute(completed);
                 }
 
@@ -185,10 +201,11 @@ public class HttpSender {
                         e.printStackTrace();
                     }
                 }
-                if (info.compeleteSize != info.fileLength) {
+                if (info.completeSize != info.fileLength) {
                     notifyFail(null);
                     LogUtils.i("download failed! spendTime=" + (System.currentTimeMillis() - starttime));
                 } else {
+                    DBService.getInstance(context).delete(url);
                     LogUtils.i("download finshed! spendTime=" + (System.currentTimeMillis() - starttime));
                 }
             }
@@ -202,12 +219,16 @@ public class HttpSender {
         });
     }
 
-    private static void downBlock(final DownloadInfo info, final int allocated, final Task task, final Object tag) {
+    private void downBlock(final DownloadInfo info, final Context context, final int allocated, final Task task, final Object tag) {
         final long startposition = info.startPos;
         final long endposition = info.endPos;
         final String url = info.url;
         final String filepath = info.filePath;
+        final int downloadId = info.downloadId;
+        final long completeSize = info.completeSize;
         TaskPool.getInstance().execute(new Task() {
+            private int count = 0;
+
             @Override
             public void onRun() {
                 LogUtils.d("startposition=" + startposition + ";endposition=" + endposition);
@@ -245,9 +266,11 @@ public class HttpSender {
                         LogUtils.d("len=" + len);
                         if (!info.compute(len)) {
                             //当下载任务失败以后结束此下载线程
-                            LogUtils.d("停止下载");
+                            LogUtils.i("停止下载 update start=" + startposition + ";end=" + endposition + ";count=" + count);
+                            DBService.getInstance(context).updataInfos(downloadId, completeSize + count, url);
                             break;
                         }
+                        count += len;
                     }
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -259,6 +282,7 @@ public class HttpSender {
             }
 
             private void notifyDownloadFailed(Exception e) {
+                DBService.getInstance(context).updataInfos(downloadId, completeSize + count, url);
                 task.notifyFail(e);
                 synchronized (task) {
                     task.notify();
@@ -272,7 +296,7 @@ public class HttpSender {
         });
     }
 
-    public static void setFileLength(final String fileDir, final String fileName, long filelength) {
+    public void setFileLength(final String fileDir, final String fileName, long filelength) {
         File dir = new File(fileDir);
         if (!dir.exists()) {
             dir.mkdirs();
@@ -280,9 +304,9 @@ public class HttpSender {
         RandomAccessFile accessFile = null;
         try {
             File downloadFile = new File(fileDir, fileName);
-            if (downloadFile.exists()) {
-                downloadFile.delete();
-            }
+//            if (downloadFile.exists()) {
+//                downloadFile.delete();
+//            }
             accessFile = new RandomAccessFile(downloadFile, "rwd");
             accessFile.setLength(filelength);// 设置本地文件的长度和下载文件相同
             accessFile.close();
@@ -293,7 +317,7 @@ public class HttpSender {
         }
     }
 
-    private static void addHeaders(HttpRequest.Builder builder, LinkedHashMap<String, String> headers) {
+    private void addHeaders(HttpRequest.Builder builder, LinkedHashMap<String, String> headers) {
         if (headers != null && headers.size() > 0) {
             builder.setHeader(headers);
         }
