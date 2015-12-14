@@ -264,13 +264,13 @@ public class HttpSender {
                         accessFile.write(buffer, 0, len);
                         // 实时更新进度
                         LogUtils.d("len=" + len);
+                        count += len;
                         if (!info.compute(len)) {
                             //当下载任务失败以后结束此下载线程
                             LogUtils.i("停止下载 update start=" + startposition + ";end=" + endposition + ";count=" + count);
                             DBService.getInstance(context).updataInfos(downloadId, completeSize + count, url);
                             break;
                         }
-                        count += len;
                     }
                 } catch (Exception e) {
                     e.printStackTrace();
