@@ -82,7 +82,7 @@ public class DBService {
     public void delete(String url) {
         SQLiteDatabase database = dbHelper.getReadableDatabase();
         int count = database.delete("download_info", "url=?", new String[]{url});
-        Log.i("delete", "delete count=" + count);
+        Log.i("delete", "delete count=" + count+";url="+url);
         database.close();
     }
 

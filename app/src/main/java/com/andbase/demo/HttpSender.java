@@ -160,7 +160,8 @@ public class HttpSender {
                     block = filelength % threadNum == 0 ? filelength / threadNum
                             : filelength / threadNum + 1;
                     setFileLength(info.fileDir, info.filename, info.fileLength);
-                    for (int i = 0; i < threadNum; i++) {
+                    int threadSize = donelist.size()==0?threadNum:donelist.size();
+                    for (int i = 0; i < threadSize; i++) {
                         final long startposition = i * block;
                         final long endposition = (i + 1) * block - 1;
                         info.startPos = startposition;
@@ -176,7 +177,7 @@ public class HttpSender {
                             info.downloadId = i;
                         }
                         LogUtils.i("update done = " + completed + ";start=" + info.startPos + ";end=" + endposition + ";filelength=" + filelength
-                                + ";donelist.size=" + donelist.size());
+                                + ";info.downloadId=" + info.downloadId);
                         downBlock(info, context, allocated, this, tag);
                     }
                 } else {
