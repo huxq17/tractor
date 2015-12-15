@@ -1,6 +1,7 @@
 package com.andbase.demo.bean;
 
 import com.andbase.tractor.task.Task;
+import com.andbase.tractor.utils.LogUtils;
 
 /**
  * 记载下载器详细信息的类
@@ -48,6 +49,7 @@ public class DownloadInfo {
         }
         completeSize += done;
         int process = (int) (100 * (1.0f * completeSize / fileLength));
+        LogUtils.d("completedsize="+completeSize+";filelength="+fileLength);
         if (process != this.process) {
             this.process = process;
             task.notifyLoading(this.process);
