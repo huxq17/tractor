@@ -52,6 +52,7 @@ public class DBService {
             list.add(info);
         }
         cursor.close();
+        database.close();
         return list;
     }
 
