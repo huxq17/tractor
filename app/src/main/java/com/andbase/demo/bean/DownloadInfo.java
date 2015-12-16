@@ -29,11 +29,10 @@ public class DownloadInfo {
     }
 
     public DownloadInfo(int downloadId,
-                        long startPosition, long endPosition, long totalSize, String url) {
+                        long startPosition, long endPosition, String url) {
         this.downloadId = downloadId;
         this.startPos = startPosition;
         this.endPos = endPosition;
-        this.fileLength = totalSize;
         this.url = url;
     }
 
@@ -42,7 +41,7 @@ public class DownloadInfo {
      *
      * @param done
      */
-    public synchronized boolean compute(int done) {
+    public synchronized boolean compute(long done) {
         if (task == null || !task.isRunning()) {
             //当下载任务不在运行时，返回false，主要用于其他下载子线程停止下载动作
             return false;

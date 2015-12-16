@@ -43,12 +43,12 @@ public class DBService {
     public List<DownloadInfo> getInfos(String urlstr) {
         List<DownloadInfo> list = new ArrayList<DownloadInfo>();
         SQLiteDatabase database = dbHelper.getReadableDatabase();
-        String sql = "select thread_id,startposition,endposition,total_size,url"
+        String sql = "select thread_id,startposition,endposition,url"
                 + " from download_info where url=?";
         Cursor cursor = database.rawQuery(sql, new String[]{urlstr});
         while (cursor.moveToNext()) {
-            DownloadInfo info = new DownloadInfo(cursor.getInt(0), cursor.getInt(1), cursor.getLong(2), cursor.getInt(3),
-                    cursor.getString(4));
+            DownloadInfo info = new DownloadInfo(cursor.getInt(0), cursor.getInt(1), cursor.getLong(2),
+                    cursor.getString(3));
             list.add(info);
         }
         cursor.close();
