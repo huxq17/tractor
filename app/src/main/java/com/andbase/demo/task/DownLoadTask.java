@@ -27,7 +27,7 @@ public class DownLoadTask extends Task {
     private Context mContext;
 
     public DownLoadTask(final DownloadInfo info, final Context context, final LoadListener listener, final Object tag) {
-        super(tag,listener);
+        super(tag, listener);
         this.mDownloadInfo = info;
         mContext = context;
     }
@@ -46,8 +46,9 @@ public class DownLoadTask extends Task {
         int allocated = freeMemory / 6 / threadNum;//给每个线程分配的内存
         LogUtils.d("spendTime allocated = " + allocated);
         mDownloadInfo.setTask(this);
-        int completed = 0;
+        long completed = 0;
         List<DownloadInfo> donelist = DBService.getInstance(mContext).getInfos(url);
+        threadNum = donelist.size() == 0 ? threadNum : donelist.size();
         if (threadNum > 1) {
             HttpResponse headResponse = HttpSender.instance().headerSync(url, getTag());
             if (headResponse == null) {
@@ -60,7 +61,6 @@ public class DownLoadTask extends Task {
                 notifyFail("获取下载文件信息失败");
             }
             setFileLength(mDownloadInfo.fileDir, mDownloadInfo.filename, mDownloadInfo.fileLength);
-            threadNum = donelist.size() == 0 ? threadNum : donelist.size();
             block = filelength % threadNum == 0 ? filelength / threadNum
                     : filelength / threadNum + 1;
             for (int i = 0; i < threadNum; i++) {
@@ -74,7 +74,6 @@ public class DownLoadTask extends Task {
                     completed += blockInfo.startPos - mDownloadInfo.startPos;
                     mDownloadInfo.startPos = blockInfo.startPos;
                     mDownloadInfo.endPos = blockInfo.endPos;
-                    //TODO 此处应该考虑线程数目变化的情况
                 } else {
                     mDownloadInfo.downloadId = i;
                 }
@@ -86,18 +85,20 @@ public class DownLoadTask extends Task {
                 downBlock(mDownloadInfo, mContext, allocated, this, getTag());
             }
         } else {
+            mDownloadInfo.downloadId = 0;
             mDownloadInfo.startPos = -1;
             mDownloadInfo.endPos = -1;
-            downBlock(mDownloadInfo, mContext, allocated, this, getTag());
-            for (DownloadInfo blockInfo : donelist) {
-                completed += blockInfo.completeSize;
+            if (donelist.size() == 1) {
+                DownloadInfo blockInfo = donelist.get(0);
+                completed = blockInfo.startPos;
+                mDownloadInfo.startPos = completed;
+                mDownloadInfo.endPos = blockInfo.endPos;
+                mDownloadInfo.fileLength = mDownloadInfo.endPos;
             }
+            LogUtils.d("update done = " + completed + ";start=" + mDownloadInfo.startPos + ";end=" + mDownloadInfo.endPos);
+            downBlock(mDownloadInfo, mContext, allocated, this, getTag());
         }
-        if (completed > 0) {
-            mDownloadInfo.completeSize = 0;
-            mDownloadInfo.compute(completed);
-        }
-
+        mDownloadInfo.compute(completed);
         synchronized (this) {
             try {
                 this.wait();
@@ -128,16 +129,15 @@ public class DownLoadTask extends Task {
         final String filepath = info.filePath;
         final int downloadId = info.downloadId;
         TaskPool.getInstance().execute(new Task() {
-            private int count = 0;
             private long curPos = startposition;
+            private long endPos = endposition;
 
             @Override
             public void onRun() {
-                LogUtils.d("startposition=" + startposition + ";endposition=" + endposition);
                 LinkedHashMap<String, String> header = new LinkedHashMap<>();
-                if (startposition != -1 && endposition != -1) {
+                if (startposition != -1 && endPos != -1) {
                     header.put("RANGE", "bytes=" + startposition + "-"
-                            + endposition);
+                            + endPos);
                 }
                 HttpResponse downloadResponse = HttpSender.instance().getInputStreamSync(url, header, null, null, tag);
                 InputStream inStream = null;
@@ -153,6 +153,7 @@ public class DownLoadTask extends Task {
                     if (startposition < 0) {
                         info.fileLength = downloadResponse.getContentLength();
                         setFileLength(info.fileDir, info.filename, info.fileLength);
+                        endPos = info.fileLength;
                         accessFile = new RandomAccessFile(saveFile, "rwd");
                         accessFile.seek(0);
                     } else {
@@ -162,22 +163,21 @@ public class DownLoadTask extends Task {
                     byte[] buffer = new byte[allocated];
 //                    byte[] buffer = new byte[2048];
                     int len = 0;
-                    while (curPos < endposition) {
+                    while (curPos < endPos) {
                         len = inStream.read(buffer);
                         if (len == -1) {
 //                            notifyDownloadFailed(null);
                             break;
                         }
-                        if (curPos + len > endposition) {
-                            len = (int) (endposition - curPos + 1);//获取正确读取的字节数
+                        if (curPos + len > endPos) {
+                            len = (int) (endPos - curPos + 1);//获取正确读取的字节数
                         }
-                        LogUtils.d("len=" + len + ";curPos=" + curPos + ";end=" + endposition + "id=" + downloadId);
-                        count += len;
+                        LogUtils.d("len=" + len + ";curPos=" + curPos + ";end=" + endPos + "id=" + downloadId);
                         curPos += len;
                         accessFile.write(buffer, 0, len);
                         if (!info.compute(len)) {
                             //当下载任务失败以后结束此下载线程
-                            DBService.getInstance(context).updataInfos(downloadId, curPos, endposition, url);
+                            DBService.getInstance(context).updataInfos(downloadId, curPos, endPos, url);
                             break;
                         }
                     }
@@ -191,7 +191,7 @@ public class DownLoadTask extends Task {
             }
 
             private void notifyDownloadFailed(Exception e) {
-                DBService.getInstance(context).updataInfos(downloadId, curPos, endposition, url);
+                DBService.getInstance(context).updataInfos(downloadId, curPos, endPos, url);
                 task.notifyFail(e);
                 synchronized (task) {
                     task.notify();
