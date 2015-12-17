@@ -16,15 +16,6 @@ import com.andbase.tractor.listener.LoadListener;
 import com.andbase.tractor.task.Task;
 import com.andbase.tractor.task.TaskPool;
 import com.andbase.tractor.utils.LogUtils;
-import com.squareup.okhttp.Call;
-import com.squareup.okhttp.Callback;
-import com.squareup.okhttp.Headers;
-import com.squareup.okhttp.MediaType;
-import com.squareup.okhttp.MultipartBuilder;
-import com.squareup.okhttp.OkHttpClient;
-import com.squareup.okhttp.Request;
-import com.squareup.okhttp.RequestBody;
-import com.squareup.okhttp.Response;
 
 import java.io.File;
 import java.io.IOException;
@@ -34,6 +25,16 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+
+import okhttp3.Call;
+import okhttp3.Callback;
+import okhttp3.Headers;
+import okhttp3.MediaType;
+import okhttp3.MultipartBody;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.Response;
 
 
 /**
@@ -153,8 +154,9 @@ public class OKHttp implements HttpBase {
         }
         if (files != null && files.size() > 0) {
             LogUtils.d("upload file.size=" + files.size());
-            MultipartBuilder builder = new MultipartBuilder()
-                    .type(MultipartBuilder.FORM);
+//            MultipartBuilder builder = new MultipartBuilder()
+//                    .type(MultipartBuilder.FORM);
+            MultipartBody.Builder builder = new MultipartBody.Builder().setType(MultipartBody.FORM);
             for (FileBody body : files) {
                 String paramName = body.getParameterName();
                 File file = body.getFile();

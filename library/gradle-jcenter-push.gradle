@@ -4,8 +4,8 @@ apply plugin: 'com.jfrog.bintray'
 
 task androidJavadocs(type: Javadoc) {
     failOnError false
-    source = android.sourceSets.main.java.srcDirs
-    classpath += project.files(android.getBootClasspath().join(File.pathSeparator))
+//    source = android.sourceSets.main.java.srcDirs
+//    classpath += project.files(android.getBootClasspath().join(File.pathSeparator))
     allprojects {
         tasks.withType(Javadoc) {
             options.encoding = "UTF-8"

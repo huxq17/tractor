@@ -1,0 +1,5 @@
+apply plugin: 'java'
+
+dependencies {
+    compile 'org.codehaus.mojo:animal-sniffer-annotations:1.14'
+}
