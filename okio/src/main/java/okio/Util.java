@@ -58,7 +58,7 @@ final class Util {
 
   /**
    * Throws {@code t}, even if the declared throws clause doesn't permit it.
-   * This is a terrible – but terribly convenient – hack that makes it easy to
+   * This is a terrible  but terribly convenient  hack that makes it easy to
    * catch and rethrow exceptions after cleanup. See Java Puzzlers #43.
    */
   public static void sneakyRethrow(Throwable t) {
