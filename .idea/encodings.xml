@@ -2,6 +2,7 @@
 <project version="4">
   <component name="Encoding">
     <file url="file://$PROJECT_DIR$/app/src/main/java/com/andbase/demo/http/request/CountingRequestBody.java" charset="GBK" />
+    <file url="file://$PROJECT_DIR$/okio/src/main/java/okio/Util.java" charset="UTF-8" />
     <file url="PROJECT" charset="UTF-8" />
   </component>
 </project>
