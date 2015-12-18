@@ -1,5 +1,6 @@
 package com.andbase.demo.db;
 
+import android.app.Application;
 import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
@@ -26,6 +27,12 @@ public class DBService {
      * @return
      */
     public static DBService getInstance(Context context) {
+        if(context == null){
+            throw new RuntimeException("context == null");
+        }
+        if(!(context instanceof Application)){
+            throw new RuntimeException("For safety consideration，context should be applicationContext，use getApplicationContext() instead");
+        }
         if (instance == null) {
             synchronized (DBService.class) {
                 if (instance == null) {

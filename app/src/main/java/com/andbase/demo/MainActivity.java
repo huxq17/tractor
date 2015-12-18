@@ -27,9 +27,10 @@ import java.util.Random;
  * Created by huxq17 on 2015/11/16.
  */
 public class MainActivity extends BaseActivity {
-        private String domin = "http://192.168.2.199:8080/";
-//    private String domin = "http://192.168.2.103:8080/";
-    private String downloadUrl = domin + "test/firetweet2.apk";
+    private final String domin = "http://192.168.2.199:8080/";
+    private final String domin1 = "http://down.sj.2144.cn/";
+    //    private final String domin = "http://192.168.2.103:8080/";
+    private String downloadUrl = domin1 + "sj/20151021/game/GuangYuBox_2144.apk";
     private String uploadUrl = domin + "UploadTest/Upload";
     private String postUrl = domin + "UploadTest/index";
     private String sdcardPath;
