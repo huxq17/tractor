@@ -1,6 +1,7 @@
 package com.andbase.demo.http;
 
-import com.squareup.okhttp.MediaType;
+
+import okhttp3.MediaType;
 
 /**
  * 进行post请求时
