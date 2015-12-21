@@ -28,6 +28,5 @@
     <orderEntry type="jdk" jdkName="Android API 23 Platform" jdkType="Android SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="library" exported="" name="animal-sniffer-annotations-1.14" level="project" />
-    <orderEntry type="library" exported="" name="okio.okio" level="project" />
   </component>
 </module>

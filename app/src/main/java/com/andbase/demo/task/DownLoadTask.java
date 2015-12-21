@@ -16,8 +16,12 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.RandomAccessFile;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
 import java.util.LinkedHashMap;
 import java.util.List;
+
+import okio.Segment;
 
 /**
  * Created by huxq17 on 2015/12/16.
@@ -49,6 +53,19 @@ public class DownLoadTask extends Task {
         long completed = 0;
         List<DownloadInfo> donelist = DBService.getInstance(mContext).getInfos(url);
         threadNum = donelist.size() == 0 ? threadNum : donelist.size();
+        int size = 0;
+        try {
+            Class segmentClass = Class.forName("okio.Segment");
+            Constructor constructor = segmentClass.getDeclaredConstructor();
+            constructor.setAccessible(true);
+            Segment segment = (Segment) constructor.newInstance();
+            Field field = segmentClass.getDeclaredField("SIZE");
+            field.setAccessible(true); // 抑制Java对修饰符的检查
+            field.set(segment, allocated);
+            size = field.getInt(segment);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         if (threadNum > 1) {
             HttpResponse headResponse = HttpSender.instance().headerSync(url, getTag());
             if (headResponse == null) {
@@ -63,6 +80,7 @@ public class DownLoadTask extends Task {
             setFileLength(mDownloadInfo.fileDir, mDownloadInfo.filename, mDownloadInfo.fileLength);
             block = filelength % threadNum == 0 ? filelength / threadNum
                     : filelength / threadNum + 1;
+
             for (int i = 0; i < threadNum; i++) {
                 final long startposition = i * block;
                 final long endposition = (i + 1) * block - 1;
@@ -108,11 +126,19 @@ public class DownLoadTask extends Task {
         }
         if (mDownloadInfo.completeSize != mDownloadInfo.fileLength) {
             notifyFail(null);
-            LogUtils.i("download failed! spendTime=" + (System.currentTimeMillis() - starttime));
+            LogUtils.i("download failed! " + "size=" + size + " allocated=" + allocated + " and spendTime=" + (System.currentTimeMillis() - starttime));
         } else {
             DBService.getInstance(mContext).delete(url);
-            LogUtils.i("download finshed! spendTime=" + (System.currentTimeMillis() - starttime));
+            LogUtils.i("download finshed! " + "size=" + size + " allocated=" + allocated + " and spendTime=" + (System.currentTimeMillis() - starttime));
         }
+    }
+
+    public void downloadWithOneThread() {
+
+    }
+
+    public void downloadWithMultiThread() {
+
     }
 
     @Override

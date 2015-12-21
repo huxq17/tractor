@@ -30,9 +30,9 @@ package okio;
  * {@code limit} and beyond. There is a single owning segment for each byte array. Positions,
  * limits, prev, and next references are not shared.
  */
-final class Segment {
+public final class Segment {
   /** The size of all segments in bytes. */
-  static final int SIZE = 8192;
+  static int SIZE = 8192*2;
 
   final byte[] data;
 
