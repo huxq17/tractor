@@ -7,5 +7,5 @@ allprojects {
     }
 }
 dependencies {
-    compile 'org.codehaus.mojo:animal-sniffer-annotations:1.14'
+//    compile 'org.codehaus.mojo:animal-sniffer-annotations:1.14'
 }

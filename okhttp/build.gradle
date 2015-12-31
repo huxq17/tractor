@@ -26,5 +26,7 @@ allprojects {
     }
 }
 dependencies {
-    compile project(':okio')
+//    compile project(':okio')
+    compile 'org.codehaus.mojo:animal-sniffer-annotations:1.14'
+    compile files('libs/okio.jar')
 }

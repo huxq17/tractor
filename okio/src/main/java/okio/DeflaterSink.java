@@ -15,12 +15,10 @@
  */
 package okio;
 
-import org.codehaus.mojo.animal_sniffer.IgnoreJRERequirement;
+import static okio.Util.checkOffsetAndCount;
 
 import java.io.IOException;
 import java.util.zip.Deflater;
-
-import static okio.Util.checkOffsetAndCount;
 
 /**
  * A sink that uses <a href="http://tools.ietf.org/html/rfc1951">DEFLATE</a> to
@@ -81,7 +79,6 @@ public final class DeflaterSink implements Sink {
     }
   }
 
-  @IgnoreJRERequirement
   private void deflate(boolean syncFlush) throws IOException {
     Buffer buffer = sink.buffer();
     while (true) {
