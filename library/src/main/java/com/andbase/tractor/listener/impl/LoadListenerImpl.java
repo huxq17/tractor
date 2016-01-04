@@ -102,6 +102,8 @@ public class LoadListenerImpl implements LoadListener {
 
                     }
                 });
+            }else{
+                doDimiss();
             }
         }
     }
