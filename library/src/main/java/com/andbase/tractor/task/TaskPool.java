@@ -56,13 +56,15 @@ public class TaskPool {
         task.setLiftCycleListener(new Task.TaskLifeCycleListener() {
             @Override
             public void onStart(Task task) {
-                mTaskQueue.add(task);
-                LogUtils.d("task " + task + "开始运行;" + TaskPool.this.toString());
+                synchronized (mTaskQueue) {
+                    mTaskQueue.add(task);
+                    LogUtils.d("task " + task + "开始运行;" + TaskPool.this.toString());
+                }
             }
 
             @Override
             public void onFinish(Task task) {
-                synchronized (TaskPool.class) {
+                synchronized (mTaskQueue) {
                     mTaskQueue.remove(task);
                     LogUtils.d("task " + task + "运行结束;" + TaskPool.this.toString());
                 }

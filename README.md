@@ -1,5 +1,5 @@
 ﻿# tractor
-轻量级的任务管理器。 dev分支通过对okio源码进行修改来提升了下载的速度
+轻量级的任务管理器。 dev分支通过对okio源码进行修改来提升了下载的速度,有下载速度方面要求的可以clone dev分支的代码，jcenter上提供的是dev分支的jar
 ###Usage
 ----
 
@@ -7,7 +7,7 @@
 
 ```groovy
 dependencies {
-   compile 'com.huxq17.android:tractor:1.0.0'
+   compile 'com.huxq17.android:tractor:1.0.1'
 }
 ```
 
