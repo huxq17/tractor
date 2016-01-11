@@ -21,13 +21,16 @@ android {
         jumboMode = true
         javaMaxHeapSize "4g"
     }
+    lintOptions {
+        abortOnError false
+    }
 }
 
 dependencies {
     compile fileTree(include: ['*.jar'], dir: 'libs')
     testCompile 'junit:junit:4.12'
-    compile project(':library')
-//    compile 'com.huxq17.android:tractor:0.0.5'
+//    compile project(':library')
+    compile 'com.huxq17.android:tractor:1.0.1'
     compile project(':okhttp')
 //    compile 'com.squareup.okhttp:okhttp:2.7.0'
     compile 'com.android.support:appcompat-v7:23.1.0'

@@ -15,8 +15,6 @@
  */
 package okio;
 
-import static okio.Util.checkOffsetAndCount;
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -32,6 +30,8 @@ import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import static okio.Util.checkOffsetAndCount;
 
 /** Essential APIs for working with Okio. */
 public final class Okio {
@@ -136,6 +136,9 @@ public final class Okio {
           timeout.throwIfReached();
           Segment tail = sink.writableSegment(1);
           int maxToCopy = (int) Math.min(byteCount, Segment.SIZE - tail.limit);
+          //fix bug java.lang.ArrayIndexOutOfBoundsException by huxq17 start
+          maxToCopy = maxToCopy>tail.data.length?tail.data.length:maxToCopy;
+          //fix bug java.lang.ArrayIndexOutOfBoundsException by huxq17 end
           int bytesRead = in.read(tail.data, tail.limit, maxToCopy);
           if (bytesRead == -1) return -1;
           tail.limit += bytesRead;
