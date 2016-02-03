@@ -5,12 +5,13 @@ import com.andbase.tractor.utils.LogUtils;
 
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 
 public class TaskPool {
-    private volatile LinkedList<Task> mTaskQueue = new LinkedList<Task>();
+    private volatile CopyOnWriteArrayList<Task> mTaskQueue = new CopyOnWriteArrayList<Task>();
     private ThreadPool mThreadPool;
     private ExecutorService mInternalService;
 
@@ -56,18 +57,14 @@ public class TaskPool {
         task.setLiftCycleListener(new Task.TaskLifeCycleListener() {
             @Override
             public void onStart(Task task) {
-                synchronized (mTaskQueue) {
-                    mTaskQueue.add(task);
-                    LogUtils.d("task " + task + "开始运行;" + TaskPool.this.toString());
-                }
+                mTaskQueue.add(task);
+                LogUtils.d("task " + task + "开始运行;" + TaskPool.this.toString());
             }
 
             @Override
             public void onFinish(Task task) {
-                synchronized (mTaskQueue) {
-                    mTaskQueue.remove(task);
-                    LogUtils.d("task " + task + "运行结束;" + TaskPool.this.toString());
-                }
+                mTaskQueue.remove(task);
+                LogUtils.d("task " + task + "运行结束;" + TaskPool.this.toString());
             }
         });
         if (task instanceof TimeoutCountTask || task instanceof CancelTask) {
