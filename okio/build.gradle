@@ -1,0 +1,11 @@
+apply plugin: 'java'
+
+
+allprojects {
+    tasks.withType(Javadoc) {
+        options.encoding = "UTF-8"
+    }
+}
+dependencies {
+//    compile 'org.codehaus.mojo:animal-sniffer-annotations:1.14'
+}
