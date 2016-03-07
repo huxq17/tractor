@@ -40,4 +40,9 @@ public class CachedThreadPool implements ThreadPool {
 		mCachedThreadPool.execute(command);
 	}
 
+	@Override
+	public void shutdown() {
+		mCachedThreadPool.shutdown();
+	}
+
 }

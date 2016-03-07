@@ -9,38 +9,42 @@ import java.util.concurrent.ThreadFactory;
 
 /**
  * 只有一个线程的线程池
- * 
- * @see Executors#newSingleThreadExecutor
+ *
  * @author xiaoqian.hu
- * 
+ * @see Executors#newSingleThreadExecutor
  */
 public class SingleThreadPool implements ThreadPool {
-	private ExecutorService mSingleThreadPool;
+    private ExecutorService mSingleThreadPool;
 
-	public SingleThreadPool() {
-		init(null);
-	}
+    public SingleThreadPool() {
+        init(null);
+    }
 
-	public SingleThreadPool(ThreadFactory threadFactory) {
-		init(threadFactory);
-	}
+    public SingleThreadPool(ThreadFactory threadFactory) {
+        init(threadFactory);
+    }
 
-	private void init(ThreadFactory threadFactory) {
-		if (threadFactory != null) {
-			mSingleThreadPool = Executors
-					.newSingleThreadExecutor(threadFactory);
-		} else {
-			mSingleThreadPool = Executors.newSingleThreadExecutor();
-		}
-	}
+    private void init(ThreadFactory threadFactory) {
+        if (threadFactory != null) {
+            mSingleThreadPool = Executors
+                    .newSingleThreadExecutor(threadFactory);
+        } else {
+            mSingleThreadPool = Executors.newSingleThreadExecutor();
+        }
+    }
 
-	public void setThreadPool(ExecutorService threadPool) {
-		mSingleThreadPool = threadPool;
-	}
+    public void setThreadPool(ExecutorService threadPool) {
+        mSingleThreadPool = threadPool;
+    }
 
-	@Override
-	public void execute(Runnable command) {
-		mSingleThreadPool.execute(command);
-	}
+    @Override
+    public void execute(Runnable command) {
+        mSingleThreadPool.execute(command);
+    }
+
+    @Override
+    public void shutdown() {
+        mSingleThreadPool.shutdown();
+    }
 
 }

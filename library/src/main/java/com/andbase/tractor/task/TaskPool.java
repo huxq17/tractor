@@ -74,6 +74,10 @@ public class TaskPool {
         }
     }
 
+    public void shutdown(){
+        mThreadPool.shutdown();
+    }
+
     public List<Task> findTaskWithTag(Object tag) {
         if (tag == null) {
             return null;

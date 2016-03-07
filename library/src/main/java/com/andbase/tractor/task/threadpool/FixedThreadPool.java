@@ -50,4 +50,9 @@ public class FixedThreadPool implements ThreadPool {
 		mFixedThreadPool.execute(command);
 	}
 
+	@Override
+	public void shutdown() {
+		mFixedThreadPool.shutdown();
+	}
+
 }

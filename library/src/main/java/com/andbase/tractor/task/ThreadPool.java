@@ -11,4 +11,5 @@ public interface ThreadPool {
 	 * @param command
 	 */
 	void execute(Runnable command);
+	void shutdown();
 }

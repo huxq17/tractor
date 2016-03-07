@@ -74,6 +74,11 @@ public class ScheduledThreadPool implements ThreadPool {
 		}
 	}
 
+	@Override
+	public void shutdown() {
+		mScheduledExecutorService.shutdown();
+	}
+
 	/**
 	 * 以固定周期频率执行任务
 	 * 
