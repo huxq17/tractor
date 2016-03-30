@@ -2,10 +2,10 @@ package com.andbase.demo.task;
 
 import android.content.Context;
 
-import com.andbase.demo.HttpSender;
 import com.andbase.demo.bean.DownloadInfo;
 import com.andbase.demo.db.DBService;
 import com.andbase.demo.http.response.HttpResponse;
+import com.andbase.demo.utils.Utils;
 import com.andbase.tractor.listener.LoadListener;
 import com.andbase.tractor.task.Task;
 import com.andbase.tractor.task.TaskPool;
@@ -67,7 +67,7 @@ public class DownLoadTask extends Task {
             e.printStackTrace();
         }
         if (threadNum > 1) {
-            HttpResponse headResponse = HttpSender.instance().headerSync(url, getTag());
+            HttpResponse headResponse = Utils.HttpSender.instance().headerSync(url, getTag());
             if (headResponse == null) {
                 notifyFail("获取下载文件信息失败");
                 return;
@@ -165,7 +165,7 @@ public class DownLoadTask extends Task {
                     header.put("RANGE", "bytes=" + startposition + "-"
                             + endPos);
                 }
-                HttpResponse downloadResponse = HttpSender.instance().getInputStreamSync(url, header, null, null, tag);
+                HttpResponse downloadResponse = Utils.HttpSender.instance().getInputStreamSync(url, header, null, null, tag);
                 InputStream inStream = null;
                 if (downloadResponse != null) {
                     inStream = downloadResponse.getInputStream();
@@ -239,6 +239,7 @@ public class DownLoadTask extends Task {
         RandomAccessFile accessFile = null;
         try {
             File downloadFile = new File(fileDir, fileName);
+            //TODO 需要考虑文件已存在的情况
 //            if (downloadFile.exists()) {
 //                downloadFile.delete();
 //            }

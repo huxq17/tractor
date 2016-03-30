@@ -1,4 +1,4 @@
-package com.andbase.demo;
+package com.andbase.demo.activity;
 
 import android.Manifest;
 import android.app.Activity;
@@ -9,6 +9,8 @@ import android.support.v4.app.ActivityCompat;
 import android.text.TextUtils;
 import android.view.View;
 
+import com.andbase.demo.R;
+import com.andbase.demo.utils.Utils;
 import com.andbase.demo.base.BaseActivity;
 import com.andbase.demo.bean.DownloadInfo;
 import com.andbase.demo.http.response.HttpResponse;
@@ -24,9 +26,9 @@ import java.util.LinkedHashMap;
 import java.util.Random;
 
 /**
- * Created by huxq17 on 2015/11/16.
+ * Created by huxq17 on 2016/3/30.
  */
-public class MainActivity extends BaseActivity {
+public class SecondActivity extends BaseActivity {
         private String domin = "http://192.168.2.199:8080/";
     private String domin1 = "http://down.sj.2144.cn/";
     private String downloadUrl = domin1 + "sj/20151021/game/GuangYuBox_2144.apk";
@@ -131,7 +133,7 @@ public class MainActivity extends BaseActivity {
                     @Override
                     public void onCancelClick() {
                         super.onCancelClick();
-                        TaskPool.getInstance().cancelTask(MainActivity.this);
+                        TaskPool.getInstance().cancelTask(SecondActivity.this);
                     }
                 }, this);
                 break;
@@ -184,7 +186,7 @@ public class MainActivity extends BaseActivity {
                 break;
             case R.id.bt_task_post_normal:
 
-                HttpSender.instance().post(postUrl, null, getParams(), new LoadListenerImpl() {
+                Utils.HttpSender.instance().post(postUrl, null, getParams(), new LoadListenerImpl() {
                     @Override
                     public void onSuccess(Object result) {
                         super.onSuccess(result);
@@ -207,7 +209,7 @@ public class MainActivity extends BaseActivity {
                 }
                 File[] files = file.listFiles();
 
-                HttpSender.instance().upload(uploadUrl, null, files, getParams(), new LoadListenerImpl(this) {
+                Utils.HttpSender.instance().upload(uploadUrl, null, files, getParams(), new LoadListenerImpl(this) {
                     @Override
                     public void onStart(Object result) {
                         super.onStart(result);
@@ -239,7 +241,7 @@ public class MainActivity extends BaseActivity {
                     public void onCancelClick() {
                         super.onCancelClick();
                         setMessage("正在取消上传...");
-                        TaskPool.getInstance().cancelTask(MainActivity.this);
+                        TaskPool.getInstance().cancelTask(SecondActivity.this);
                     }
 
                     @Override
@@ -259,7 +261,7 @@ public class MainActivity extends BaseActivity {
                 final String filename = Util.getFilename(downloadUrl);
                 final int threadNum = 3;
                 DownloadInfo info = new DownloadInfo(downloadUrl, filedir, filename, threadNum);
-                HttpSender.instance().download(info, getApplicationContext(), new LoadListenerImpl(this) {
+                Utils.HttpSender.instance().download(info, getApplicationContext(), new LoadListenerImpl(this) {
                     @Override
                     public void onStart(Object result) {
                         super.onStart(result);
@@ -280,7 +282,7 @@ public class MainActivity extends BaseActivity {
                         setMessage("下载成功");
                         if (filename.endsWith(".apk")) {
                             String filePath = filedir + filename;
-                            Utils.install(MainActivity.this, filePath);
+                            Utils.install(SecondActivity.this, filePath);
                         }
                     }
 
@@ -301,7 +303,7 @@ public class MainActivity extends BaseActivity {
                     public void onCancelClick() {
                         super.onCancelClick();
                         setMessage("正在取消下载...");
-                        TaskPool.getInstance().cancelTask(MainActivity.this);
+                        TaskPool.getInstance().cancelTask(SecondActivity.this);
                     }
 
                     @Override
@@ -368,11 +370,11 @@ public class MainActivity extends BaseActivity {
     }
 
     public void doNormalGet(String url, String params, LoadListener listener, Object tag) {
-        HttpSender.instance().get(url, null, params, listener, tag);
+        Utils.HttpSender.instance().get(url, null, params, listener, tag);
     }
 
     public void doNormalPost(String url, String params, LoadListener listener, Object tag) {
-        HttpSender.instance().post(url, null, params, listener, tag);
+        Utils.HttpSender.instance().post(url, null, params, listener, tag);
     }
 
     private LinkedHashMap<String, Object> getParams() {
