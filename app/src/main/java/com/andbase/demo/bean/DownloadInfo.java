@@ -17,7 +17,6 @@ public class DownloadInfo {
     public String fileDir;//保存文件的文件夹路径
     public String filename;//保存的文件名
     public int threadNum;
-    private Task task;
     private int process;
 
     public DownloadInfo(String url, String fileDir, String filename, int threadNum) {
@@ -41,7 +40,7 @@ public class DownloadInfo {
      *
      * @param done
      */
-    public synchronized boolean compute(long done) {
+    public synchronized boolean compute(Task task,long done) {
         if (task == null || !task.isRunning()) {
             //当下载任务不在运行时，返回false，主要用于其他下载子线程停止下载动作
             return false;
@@ -53,16 +52,12 @@ public class DownloadInfo {
             this.process = process;
             task.notifyLoading(this.process);
         }
-        if (completeSize == fileLength) {
+        if (completeSize >= fileLength) {
             synchronized (task) {
                 task.notify();
             }
         }
         return true;
-    }
-
-    public void setTask(Task task) {
-        this.task = task;
     }
 
     @Override

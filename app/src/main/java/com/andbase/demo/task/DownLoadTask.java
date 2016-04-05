@@ -5,7 +5,7 @@ import android.content.Context;
 import com.andbase.demo.bean.DownloadInfo;
 import com.andbase.demo.db.DBService;
 import com.andbase.demo.http.response.HttpResponse;
-import com.andbase.demo.utils.Utils;
+import com.andbase.demo.utils.HttpSender;
 import com.andbase.tractor.listener.LoadListener;
 import com.andbase.tractor.task.Task;
 import com.andbase.tractor.task.TaskPool;
@@ -42,14 +42,14 @@ public class DownLoadTask extends Task {
         String url = mDownloadInfo.url;
         int threadNum = mDownloadInfo.threadNum;
         if (threadNum < 1) {
-            throw new RuntimeException("threadNum<1");
+            throw new RuntimeException("threadNum < 1");
         }
+        //如果文件不存在就删除数据库中的缓存
+        deleteCache(mDownloadInfo, url);
         long block = -1;
         final long starttime = System.currentTimeMillis();
         int freeMemory = ((int) Runtime.getRuntime().freeMemory());// 获取应用剩余可用内存
         int allocated = freeMemory / 6 / threadNum;//给每个线程分配的内存
-        LogUtils.d("spendTime allocated = " + allocated);
-        mDownloadInfo.setTask(this);
         long completed = 0;
         List<DownloadInfo> donelist = DBService.getInstance(mContext).getInfos(url);
         threadNum = donelist.size() == 0 ? threadNum : donelist.size();
@@ -67,19 +67,13 @@ public class DownLoadTask extends Task {
             e.printStackTrace();
         }
         if (threadNum > 1) {
-            HttpResponse headResponse = Utils.HttpSender.instance().headerSync(url, getTag());
-            if (headResponse == null) {
-                notifyFail("获取下载文件信息失败");
-                return;
-            }
-            long filelength = headResponse.getContentLength();
-            mDownloadInfo.fileLength = filelength;
-            if (filelength < 0) {
+            long fileLength = getFileLength(donelist, url);
+            if (fileLength <= 0) {
                 notifyFail("获取下载文件信息失败");
             }
+            mDownloadInfo.fileLength = fileLength;
             setFileLength(mDownloadInfo.fileDir, mDownloadInfo.filename, mDownloadInfo.fileLength);
-            block = filelength % threadNum == 0 ? filelength / threadNum
-                    : filelength / threadNum + 1;
+            block = fileLength % threadNum == 0 ? fileLength / threadNum : fileLength / threadNum + 1;
 
             for (int i = 0; i < threadNum; i++) {
                 final long startposition = i * block;
@@ -96,9 +90,9 @@ public class DownLoadTask extends Task {
                     mDownloadInfo.downloadId = i;
                 }
                 if (i == threadNum - 1) {
-                    mDownloadInfo.endPos = mDownloadInfo.endPos > filelength ? filelength : mDownloadInfo.endPos;
+                    mDownloadInfo.endPos = mDownloadInfo.endPos > fileLength ? fileLength : mDownloadInfo.endPos;
                 }
-                LogUtils.d("update done = " + completed + ";start=" + mDownloadInfo.startPos + ";end=" + endposition + ";filelength=" + filelength
+                LogUtils.d("update done = " + completed + ";start=" + mDownloadInfo.startPos + ";end=" + endposition + ";filelength=" + fileLength
                         + ";info.downloadId=" + mDownloadInfo.downloadId);
                 downBlock(mDownloadInfo, mContext, allocated, this, getTag());
             }
@@ -116,7 +110,7 @@ public class DownLoadTask extends Task {
             LogUtils.d("update done = " + completed + ";start=" + mDownloadInfo.startPos + ";end=" + mDownloadInfo.endPos);
             downBlock(mDownloadInfo, mContext, allocated, this, getTag());
         }
-        mDownloadInfo.compute(completed);
+        mDownloadInfo.compute(this, completed);
         synchronized (this) {
             try {
                 this.wait();
@@ -124,7 +118,7 @@ public class DownLoadTask extends Task {
                 e.printStackTrace();
             }
         }
-        if (mDownloadInfo.completeSize != mDownloadInfo.fileLength) {
+        if (mDownloadInfo.completeSize < mDownloadInfo.fileLength) {
             notifyFail(null);
             LogUtils.i("download failed! " + "size=" + size + " allocated=" + allocated + " and spendTime=" + (System.currentTimeMillis() - starttime));
         } else {
@@ -133,13 +127,29 @@ public class DownLoadTask extends Task {
         }
     }
 
-    public void downloadWithOneThread() {
-
+    private void deleteCache(DownloadInfo info, String url) {
+        File file = new File(info.filePath);
+        if (!file.exists()) {
+            DBService.getInstance(mContext).delete(url);
+        }
     }
 
-    public void downloadWithMultiThread() {
-
+    private long getFileLength(List<DownloadInfo> donelist, String url) {
+        long length = 0;
+        for (DownloadInfo info : donelist) {
+            if (info.endPos > length) {
+                length = info.endPos;
+            }
+        }
+        if (length <= 0) {
+            HttpResponse headResponse = HttpSender.instance().headerSync(url, getTag());
+            if (headResponse != null) {
+               length = headResponse.getContentLength();
+            }
+        }
+        return length;
     }
+
 
     @Override
     public void cancelTask() {
@@ -162,10 +172,9 @@ public class DownLoadTask extends Task {
             public void onRun() {
                 LinkedHashMap<String, String> header = new LinkedHashMap<>();
                 if (startposition != -1 && endPos != -1) {
-                    header.put("RANGE", "bytes=" + startposition + "-"
-                            + endPos);
+                    header.put("RANGE", "bytes=" + startposition + "-" + endPos);
                 }
-                HttpResponse downloadResponse = Utils.HttpSender.instance().getInputStreamSync(url, header, null, null, tag);
+                HttpResponse downloadResponse = HttpSender.instance().getInputStreamSync(url, header, null, null, tag);
                 InputStream inStream = null;
                 if (downloadResponse != null) {
                     inStream = downloadResponse.getInputStream();
@@ -176,14 +185,13 @@ public class DownLoadTask extends Task {
                 RandomAccessFile accessFile = null;
                 try {
                     File saveFile = new File(filepath);
+                    accessFile = new RandomAccessFile(saveFile, "rwd");
                     if (startposition < 0) {
                         info.fileLength = downloadResponse.getContentLength();
                         setFileLength(info.fileDir, info.filename, info.fileLength);
                         endPos = info.fileLength;
-                        accessFile = new RandomAccessFile(saveFile, "rwd");
                         accessFile.seek(0);
                     } else {
-                        accessFile = new RandomAccessFile(saveFile, "rwd");
                         accessFile.seek(startposition);
                     }
                     byte[] buffer = new byte[allocated];
@@ -201,9 +209,8 @@ public class DownLoadTask extends Task {
                         LogUtils.d("len=" + len + ";curPos=" + curPos + ";end=" + endPos + "id=" + downloadId);
                         curPos += len;
                         accessFile.write(buffer, 0, len);
-                        if (!info.compute(len)) {
+                        if (!info.compute(task, len)) {
                             //当下载任务失败以后结束此下载线程
-                            DBService.getInstance(context).updataInfos(downloadId, curPos, endPos, url);
                             break;
                         }
                     }
@@ -211,13 +218,13 @@ public class DownLoadTask extends Task {
                     e.printStackTrace();
                     notifyDownloadFailed(e);
                 } finally {
+                    DBService.getInstance(context).updataInfos(downloadId, curPos, endPos, url);
                     Util.closeQuietly(inStream);
                     Util.closeQuietly(accessFile);
                 }
             }
 
             private void notifyDownloadFailed(Exception e) {
-                DBService.getInstance(context).updataInfos(downloadId, curPos, endPos, url);
                 task.notifyFail(e);
                 synchronized (task) {
                     task.notify();

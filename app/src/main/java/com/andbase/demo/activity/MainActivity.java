@@ -2,6 +2,7 @@ package com.andbase.demo.activity;
 
 import android.Manifest;
 import android.app.Activity;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.SystemClock;
@@ -10,10 +11,11 @@ import android.text.TextUtils;
 import android.view.View;
 
 import com.andbase.demo.R;
-import com.andbase.demo.utils.Utils;
 import com.andbase.demo.base.BaseActivity;
 import com.andbase.demo.bean.DownloadInfo;
 import com.andbase.demo.http.response.HttpResponse;
+import com.andbase.demo.utils.HttpSender;
+import com.andbase.demo.utils.Utils;
 import com.andbase.tractor.listener.LoadListener;
 import com.andbase.tractor.listener.impl.LoadListenerImpl;
 import com.andbase.tractor.task.Task;
@@ -29,7 +31,7 @@ import java.util.Random;
  * Created by huxq17 on 2015/11/16.
  */
 public class MainActivity extends BaseActivity {
-        private String domin = "http://192.168.2.199:8080/";
+    private String domin = "http://192.168.2.199:8080/";
     private String domin1 = "http://down.sj.2144.cn/";
     private String downloadUrl = domin1 + "sj/20151021/game/GuangYuBox_2144.apk";
     private String uploadUrl = domin + "UploadTest/Upload";
@@ -186,7 +188,7 @@ public class MainActivity extends BaseActivity {
                 break;
             case R.id.bt_task_post_normal:
 
-                Utils.HttpSender.instance().post(postUrl, null, getParams(), new LoadListenerImpl() {
+                HttpSender.instance().post(postUrl, null, getParams(), new LoadListenerImpl() {
                     @Override
                     public void onSuccess(Object result) {
                         super.onSuccess(result);
@@ -209,7 +211,7 @@ public class MainActivity extends BaseActivity {
                 }
                 File[] files = file.listFiles();
 
-                Utils.HttpSender.instance().upload(uploadUrl, null, files, getParams(), new LoadListenerImpl(this) {
+                HttpSender.instance().upload(uploadUrl, null, files, getParams(), new LoadListenerImpl(this) {
                     @Override
                     public void onStart(Object result) {
                         super.onStart(result);
@@ -261,7 +263,7 @@ public class MainActivity extends BaseActivity {
                 final String filename = Util.getFilename(downloadUrl);
                 final int threadNum = 3;
                 DownloadInfo info = new DownloadInfo(downloadUrl, filedir, filename, threadNum);
-                Utils.HttpSender.instance().download(info, getApplicationContext(), new LoadListenerImpl(this) {
+                HttpSender.instance().download(info, getApplicationContext(), new LoadListenerImpl(this) {
                     @Override
                     public void onStart(Object result) {
                         super.onStart(result);
@@ -312,6 +314,9 @@ public class MainActivity extends BaseActivity {
                         setMessage("已取消下载");
                     }
                 }, this);
+                break;
+            case R.id.bt_list_download:
+                startActivity(new Intent(this, SecondActivity.class));
                 break;
         }
     }
@@ -370,11 +375,11 @@ public class MainActivity extends BaseActivity {
     }
 
     public void doNormalGet(String url, String params, LoadListener listener, Object tag) {
-        Utils.HttpSender.instance().get(url, null, params, listener, tag);
+        HttpSender.instance().get(url, null, params, listener, tag);
     }
 
     public void doNormalPost(String url, String params, LoadListener listener, Object tag) {
-        Utils.HttpSender.instance().post(url, null, params, listener, tag);
+        HttpSender.instance().post(url, null, params, listener, tag);
     }
 
     private LinkedHashMap<String, Object> getParams() {

@@ -27,10 +27,10 @@ public class DBService {
      * @return
      */
     public static DBService getInstance(Context context) {
-        if(context == null){
+        if (context == null) {
             throw new RuntimeException("context == null");
         }
-        if(!(context instanceof Application)){
+        if (!(context instanceof Application)) {
             throw new RuntimeException("For safety consideration，context should be applicationContext，use getApplicationContext() instead");
         }
         if (instance == null) {
@@ -50,8 +50,7 @@ public class DBService {
     public List<DownloadInfo> getInfos(String urlstr) {
         List<DownloadInfo> list = new ArrayList<DownloadInfo>();
         SQLiteDatabase database = dbHelper.getReadableDatabase();
-        String sql = "select thread_id,startposition,endposition,url"
-                + " from download_info where url=?";
+        String sql = "select thread_id,startposition,endposition,url from download_info where url=?";
         Cursor cursor = database.rawQuery(sql, new String[]{urlstr});
         while (cursor.moveToNext()) {
             DownloadInfo info = new DownloadInfo(cursor.getInt(0), cursor.getInt(1), cursor.getLong(2),
@@ -70,8 +69,7 @@ public class DBService {
     public synchronized void updataInfos(int threadId, long startposition, long endposition, String url) {
         SQLiteDatabase database = dbHelper.getReadableDatabase();
         // 如果存在就更新，不存在就插入
-        String sql = "replace into download_info"
-                + "(thread_id,startposition,endposition,url) values(?,?,?,?)";
+        String sql = "replace into download_info(thread_id,startposition,endposition,url) values(?,?,?,?)";
         Object[] bindArgs = {threadId, startposition, endposition, url};
         database.execSQL(sql, bindArgs);
         LogUtils.i("update threadid=" + threadId + ";startposition=" + startposition + ";endposition=" + endposition);
@@ -90,7 +88,7 @@ public class DBService {
     public void delete(String url) {
         SQLiteDatabase database = dbHelper.getReadableDatabase();
         int count = database.delete("download_info", "url=?", new String[]{url});
-        Log.i("delete", "delete count=" + count+";url="+url);
+        Log.i("delete", "delete count=" + count + ";url=" + url);
         database.close();
     }
 

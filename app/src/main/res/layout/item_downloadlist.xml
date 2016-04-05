@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:paddingBottom="10dp"
+    android:paddingLeft="20dp"
+    android:paddingRight="20dp"
+    android:paddingTop="10dp">
+
+    <Button
+        android:id="@+id/bt_install"
+        android:layout_width="70dp"
+        android:layout_height="40dp"
+        android:layout_alignParentRight="true"
+        android:layout_marginLeft="10dp"
+        android:layout_marginTop="10dp"
+        android:background="@drawable/bg_button"
+        android:text="下载" />
+
+    <TextView
+        android:layout_alignParentLeft="true"
+        android:id="@+id/tv_name"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_toLeftOf="@+id/bt_install"
+        android:text="游戏名"
+        android:textColor="@android:color/black"
+        android:textSize="20sp" />
+
+    <LinearLayout
+        android:id="@+id/ll_downdata"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/tv_name"
+        android:layout_marginBottom="5dp"
+        android:layout_marginTop="5dp"
+        android:layout_toLeftOf="@+id/bt_install"
+        android:orientation="horizontal">
+
+        <TextView
+            android:id="@+id/tv_downsize"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="23.22M/84.74M"
+            android:textColor="#959595"
+            android:textSize="14sp" />
+
+        <TextView
+            android:id="@+id/tv_downspeed"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="123.40K/s"
+            android:textColor="#959595"
+            android:textSize="14sp" />
+
+    </LinearLayout>
+
+    <ProgressBar
+        android:id="@+id/pb_process"
+        style="?android:attr/progressBarStyleHorizontal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/ll_downdata"
+        android:layout_toLeftOf="@+id/bt_install"
+        android:max="100"
+        android:progress="0" />
+</RelativeLayout>

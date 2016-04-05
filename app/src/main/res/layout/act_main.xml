@@ -41,4 +41,9 @@
         style="@style/bt_style"
         android:text="取消任务" />
 
+    <Button
+        android:id="@+id/bt_list_download"
+        style="@style/bt_style"
+        android:text="列表下载" />
+
 </LinearLayout>

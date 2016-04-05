@@ -1,8 +1,13 @@
 <resources>
-<style name="bt_style">
-    <item name="android:layout_width">wrap_content</item>
-    <item name="android:layout_height">wrap_content</item>
-    <item name="android:onClick">onClick</item>
-    <item name="android:textColor">@android:color/black</item>
-</style>
+
+    <style name="bt_style">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:onClick">onClick</item>
+        <item name="android:textColor">@android:color/black</item>
+        <item name="android:background">#2BACF5</item>
+        <item name="android:layout_marginTop">5dp</item>
+        <item name="android:layout_marginBottom">5dp</item>
+        <item name="android:padding">5dp</item>
+    </style>
 </resources>
