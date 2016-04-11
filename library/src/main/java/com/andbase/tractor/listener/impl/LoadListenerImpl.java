@@ -56,7 +56,7 @@ public class LoadListenerImpl implements LoadListener {
         }
         if (context != null) {
             this.context = new WeakReference<>(context);
-            initProgressDialog(message);
+            initProgressDialog(mMessage);
         }
     }
 
