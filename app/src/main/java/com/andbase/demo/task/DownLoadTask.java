@@ -144,7 +144,7 @@ public class DownLoadTask extends Task {
         if (length <= 0) {
             HttpResponse headResponse = HttpSender.instance().headerSync(url, getTag());
             if (headResponse != null) {
-               length = headResponse.getContentLength();
+                length = headResponse.getContentLength();
             }
         }
         return length;
@@ -218,7 +218,9 @@ public class DownLoadTask extends Task {
                     e.printStackTrace();
                     notifyDownloadFailed(e);
                 } finally {
-                    DBService.getInstance(context).updataInfos(downloadId, curPos, endPos, url);
+                    if (!info.hasDownloadSuccess()) {
+                        DBService.getInstance(context).updataInfos(downloadId, curPos, endPos, url);
+                    }
                     Util.closeQuietly(inStream);
                     Util.closeQuietly(accessFile);
                 }

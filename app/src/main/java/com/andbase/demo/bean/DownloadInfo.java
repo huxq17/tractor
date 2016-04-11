@@ -40,14 +40,14 @@ public class DownloadInfo {
      *
      * @param done
      */
-    public synchronized boolean compute(Task task,long done) {
+    public synchronized boolean compute(Task task, long done) {
         if (task == null || !task.isRunning()) {
             //当下载任务不在运行时，返回false，主要用于其他下载子线程停止下载动作
             return false;
         }
         completeSize += done;
         int process = (int) (100 * (1.0f * completeSize / fileLength));
-        LogUtils.d("completedsize="+completeSize+";filelength="+fileLength);
+        LogUtils.d("completedsize=" + completeSize + ";filelength=" + fileLength);
         if (process != this.process) {
             this.process = process;
             task.notifyLoading(this.process);
@@ -58,6 +58,10 @@ public class DownloadInfo {
             }
         }
         return true;
+    }
+
+    public boolean hasDownloadSuccess() {
+        return completeSize >= fileLength;
     }
 
     @Override

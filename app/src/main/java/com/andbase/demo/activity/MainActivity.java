@@ -166,7 +166,7 @@ public class MainActivity extends BaseActivity {
                 TaskPool.getInstance().cancelTask(this);
                 break;
             case R.id.bt_task_get_normal:
-                doNormalGet("https://raw.githubusercontent.com/huxq17/tractor/master/authorInfo.json", null, new LoadListenerImpl() {
+                doNormalGet("https://raw.githubusercontent.com/huxq17/tractor/master/authorInfo.json", null, new LoadListenerImpl(this) {
                     @Override
                     public void onSuccess(Object result) {
                         super.onSuccess(result);
