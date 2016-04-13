@@ -27,6 +27,7 @@ public class LoadListenerImpl implements LoadListener {
 
     /**
      * 显示progressdialog，其上显示的文字是默认的
+     *
      * @param context
      */
     public LoadListenerImpl(Context context) {
@@ -35,6 +36,7 @@ public class LoadListenerImpl implements LoadListener {
 
     /**
      * 显示progressdialog,其上显示的文字是message
+     *
      * @param context
      * @param message
      */
@@ -44,6 +46,7 @@ public class LoadListenerImpl implements LoadListener {
 
     /**
      * 设置自定义的progressdialog，如果不设置则使用tractor自带的
+     *
      * @param progressDialog
      */
     public void setProgressDialog(ProgressDialog progressDialog) {
@@ -82,7 +85,7 @@ public class LoadListenerImpl implements LoadListener {
      */
     public void dimiss(final long... dismissTime) {
         if (null != mProgressDialog && mProgressDialog.isShowing()) {
-            if (dismissTime != null && dismissTime[0] > 0) {
+            if (dismissTime != null && dismissTime.length > 0 && dismissTime[0] > 0) {
                 LoadListenerImpl listener = new LoadListenerImpl() {
                     @Override
                     public void onSuccess(Object result) {
@@ -102,7 +105,7 @@ public class LoadListenerImpl implements LoadListener {
 
                     }
                 });
-            }else{
+            } else {
                 doDimiss();
             }
         }

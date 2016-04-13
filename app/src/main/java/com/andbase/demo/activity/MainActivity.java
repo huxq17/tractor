@@ -274,7 +274,6 @@ public class MainActivity extends BaseActivity {
                     public void onLoading(Object result) {
                         super.onLoading(result);
                         int process = (int) result;
-                        LogUtils.i("已下载 " + process + "%");
                         setMessage("已下载 " + process + "%");
                     }
 
