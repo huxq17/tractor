@@ -100,20 +100,15 @@ public class HttpSender {
         return response;
     }
 
-    public void upload(String url, LinkedHashMap<String, String> headers, File[] files, LinkedHashMap<String, Object> params, LoadListener listener, Object tag) {
+    public void upload(String url, LinkedHashMap<String, String> headers, LinkedHashMap<String,File> files, LinkedHashMap<String, Object> params, LoadListener listener, Object tag) {
         HttpRequest.Builder builder = new HttpRequest.Builder();
         builder.url(url).setParams(params);
         addHeaders(builder, headers);
-        for (File file : files) {
-            builder.addFile(file);
+        for (LinkedHashMap.Entry<String,File> set : files.entrySet()) {
+            builder.addFile(set.getKey(),set.getValue());
         }
         mHttpBase.post(builder.build(), listener, tag);
     }
-
-    public void upload(String url, LinkedHashMap<String, String> headers, File[] files, LoadListener listener, Object tag) {
-        upload(url, headers, files, null, listener, tag);
-    }
-
 
     /**
      * 下载文件，支持多线程下载

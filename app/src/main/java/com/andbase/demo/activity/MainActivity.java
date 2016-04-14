@@ -210,8 +210,12 @@ public class MainActivity extends BaseActivity {
                     return;
                 }
                 File[] files = file.listFiles();
-
-                HttpSender.instance().upload(uploadUrl, null, files, getParams(), new LoadListenerImpl(this) {
+                LinkedHashMap<String,File> fileLinkedHashMap = new LinkedHashMap<>();
+                for(int i = 0;i<files.length;i++){
+                    // key是参数名 value是File
+                    fileLinkedHashMap.put(files[i].getName(),files[i]);//这里应该把files[i].getName()换成你需要的参数名
+                }
+                HttpSender.instance().upload(uploadUrl, null, fileLinkedHashMap, getParams(), new LoadListenerImpl(this) {
                     @Override
                     public void onStart(Object result) {
                         super.onStart(result);
