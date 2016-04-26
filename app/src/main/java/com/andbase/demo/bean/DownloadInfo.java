@@ -40,7 +40,7 @@ public class DownloadInfo {
      *
      * @param done
      */
-    public synchronized boolean compute(Task task, long done) {
+    public boolean compute(Task task, long done) {
         if (task == null || !task.isRunning()) {
             //当下载任务不在运行时，返回false，主要用于其他下载子线程停止下载动作
             return false;
@@ -52,7 +52,7 @@ public class DownloadInfo {
             this.process = process;
             task.notifyLoading(this.process);
         }
-        if (completeSize >= fileLength) {
+        if (hasDownloadSuccess()) {
             synchronized (task) {
                 task.notify();
             }

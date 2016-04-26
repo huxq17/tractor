@@ -110,15 +110,15 @@ public class DownLoadTask extends Task {
             LogUtils.d("update done = " + completed + ";start=" + mDownloadInfo.startPos + ";end=" + mDownloadInfo.endPos);
             downBlock(mDownloadInfo, mContext, allocated, this, getTag());
         }
-        mDownloadInfo.compute(this, completed);
         synchronized (this) {
+            mDownloadInfo.compute(this, completed);
             try {
                 this.wait();
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
         }
-        if (mDownloadInfo.completeSize < mDownloadInfo.fileLength) {
+        if (!mDownloadInfo.hasDownloadSuccess()) {
             notifyFail(null);
             LogUtils.i("download failed! " + "size=" + size + " allocated=" + allocated + " and spendTime=" + (System.currentTimeMillis() - starttime));
         } else {
@@ -206,12 +206,14 @@ public class DownLoadTask extends Task {
                         if (curPos + len > endPos) {
                             len = (int) (endPos - curPos + 1);//获取正确读取的字节数
                         }
-                        LogUtils.d("len=" + len + ";curPos=" + curPos + ";end=" + endPos + "id=" + downloadId);
-                        curPos += len;
-                        accessFile.write(buffer, 0, len);
-                        if (!info.compute(task, len)) {
-                            //当下载任务失败以后结束此下载线程
-                            break;
+                        synchronized (task) {
+                            if (!info.compute(task, len)) {
+                                //当下载任务失败以后结束此下载线程
+                                break;
+                            }
+                            LogUtils.d("len=" + len + ";curPos=" + curPos + ";end=" + endPos + "id=" + downloadId);
+                            curPos += len;
+                            accessFile.write(buffer, 0, len);
                         }
                     }
                 } catch (Exception e) {
