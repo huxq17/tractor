@@ -1,10 +1,12 @@
 package com.andbase.demo.http;
 
 import android.annotation.TargetApi;
+import android.content.Context;
 import android.os.Build;
 import android.text.TextUtils;
 
 import com.andbase.demo.http.body.FileBody;
+import com.andbase.demo.http.cookie.PersistentCookieStore;
 import com.andbase.demo.http.request.CountingRequestBody;
 import com.andbase.demo.http.request.HttpHeader;
 import com.andbase.demo.http.request.HttpMethod;
@@ -43,10 +45,19 @@ import okhttp3.Response;
 @TargetApi(Build.VERSION_CODES.GINGERBREAD)
 public class OKHttp implements HttpBase {
 
-    private static final OkHttpClient mOkHttpClient = new OkHttpClient();
+    private static OkHttpClient mOkHttpClient;
     private NetWorkTask netWorkTask;
+    private static boolean hasInited = false;
 
-    static {
+    public static void init(Context context) {
+        if (hasInited) {
+            return;
+        }
+        if(context==null){
+            throw  new RuntimeException("context==null");
+        }
+        hasInited = true;
+        mOkHttpClient = new OkHttpClient();
         mOkHttpClient.setRetryOnConnectionFailure(true);
         mOkHttpClient.setConnectTimeout(15, TimeUnit.SECONDS);
         mOkHttpClient.setReadTimeout(15, TimeUnit.SECONDS);
@@ -56,17 +67,30 @@ public class OKHttp implements HttpBase {
         if (versionCode >= 9) {
             mOkHttpClient.setCookieHandler(new CookieManager(null,
                     CookiePolicy.ACCEPT_ORIGINAL_SERVER));
+            mOkHttpClient.setCookieHandler(new CookieManager(
+                    new PersistentCookieStore(context.getApplicationContext()), CookiePolicy.ACCEPT_ALL));
 //            StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitNetwork().build();
 //            StrictMode.setThreadPolicy(policy);
         }
+    }
+
+    public static boolean hasInit() {
+        return hasInited;
     }
 
     public void prepareTask() {
         netWorkTask = new NetWorkTask();
     }
 
+    private void assertInited() {
+        if (!hasInited) {
+            throw new RuntimeException("please invoke init method first");
+        }
+    }
+
     @Override
     public HttpResponse get(HttpRequest request, LoadListener listener, Object... tag) {
+        assertInited();
         prepareTask();
         String url = request.getUrl();
         RequestParams requestParams = request.getRequestParams();
@@ -87,6 +111,7 @@ public class OKHttp implements HttpBase {
 
     @Override
     public HttpResponse post(HttpRequest request, LoadListener listener, Object... tag) {
+        assertInited();
         prepareTask();
         String url = request.getUrl();
         LogUtils.d("post url=" + url);
@@ -107,6 +132,7 @@ public class OKHttp implements HttpBase {
 
     @Override
     public HttpResponse request(HttpRequest request, LoadListener listener, Object... tag) {
+        assertInited();
         prepareTask();
         String url = request.getUrl();
         RequestParams requestParams = request.getRequestParams();
@@ -163,7 +189,7 @@ public class OKHttp implements HttpBase {
                 contentType = body.getContentType();
                 RequestBody fileBody = RequestBody.create(MediaType.parse(contentType), file);
                 builder.addPart(Headers.of("Content-Disposition",
-                                "form-data; name=\"" + paramName + "\"; filename=\"" + file.getName() + "\""),
+                        "form-data; name=\"" + paramName + "\"; filename=\"" + file.getName() + "\""),
                         fileBody);
                 LogUtils.d("upload paramName=" + paramName + ";filename=" + file.getName());
             }
@@ -176,7 +202,7 @@ public class OKHttp implements HttpBase {
             return requestBody;
 //            return builder.build();
         } else {
-            LogUtils.i("params="+params+";mediaType="+contentType + "; charset=" + charset);
+            LogUtils.i("params=" + params + ";mediaType=" + contentType + "; charset=" + charset);
             return RequestBody.create(MediaType.parse(contentType + "; charset=" + charset), params);
         }
     }

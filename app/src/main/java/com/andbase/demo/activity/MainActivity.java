@@ -13,6 +13,7 @@ import android.view.View;
 import com.andbase.demo.R;
 import com.andbase.demo.base.BaseActivity;
 import com.andbase.demo.bean.DownloadInfo;
+import com.andbase.demo.http.OKHttp;
 import com.andbase.demo.http.response.HttpResponse;
 import com.andbase.demo.utils.HttpSender;
 import com.andbase.demo.utils.Utils;
@@ -44,6 +45,9 @@ public class MainActivity extends BaseActivity {
         setContentView(R.layout.act_main);
         verifyStoragePermissions(this);
         sdcardPath = Util.getSdcardPath();
+        if(!OKHttp.hasInit()){
+            OKHttp.init(getApplicationContext());
+        }
 
     }
 
