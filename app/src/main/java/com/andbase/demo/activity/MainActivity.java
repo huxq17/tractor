@@ -45,10 +45,7 @@ public class MainActivity extends BaseActivity {
         setContentView(R.layout.act_main);
         verifyStoragePermissions(this);
         sdcardPath = Util.getSdcardPath();
-        if(!OKHttp.hasInit()){
-            OKHttp.init(getApplicationContext());
-        }
-
+        OKHttp.init(getApplicationContext());
     }
 
     // Storage Permissions
@@ -214,10 +211,10 @@ public class MainActivity extends BaseActivity {
                     return;
                 }
                 File[] files = file.listFiles();
-                LinkedHashMap<String,File> fileLinkedHashMap = new LinkedHashMap<>();
-                for(int i = 0;i<files.length;i++){
+                LinkedHashMap<String, File> fileLinkedHashMap = new LinkedHashMap<>();
+                for (int i = 0; i < files.length; i++) {
                     // key是参数名 value是File
-                    fileLinkedHashMap.put(files[i].getName(),files[i]);//这里应该把files[i].getName()换成你需要的参数名
+                    fileLinkedHashMap.put(files[i].getName(), files[i]);//这里应该把files[i].getName()换成你需要的参数名
                 }
                 HttpSender.instance().upload(uploadUrl, null, fileLinkedHashMap, getParams(), new LoadListenerImpl(this) {
                     @Override
