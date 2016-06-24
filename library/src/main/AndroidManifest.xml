@@ -1,8 +1,1 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.andbase.tractor">
-
-    <application android:allowBackup="true" >
-
-    </application>
-
-</manifest>
+<manifest package="com.andbase.tractor"></manifest>

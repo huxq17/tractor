@@ -9,7 +9,7 @@
 
 ```groovy
 dependencies {
-   compile 'com.huxq17.android:tractor:1.0.5'
+   compile 'com.huxq17.android:tractor:1.1.0'
 }
 ```
 
