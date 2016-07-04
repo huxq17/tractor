@@ -23,8 +23,8 @@ dependencies {
 ## **效果图**
 <td>
 	 <img src="gifs/1449480498_3231.gif" width="290" height="485" />
-	 <img src="gifs/1449480498_4123.gif" width="290" height="485" />
-	 <img src="gifs/1449480498_4805.gif" width="290" height="485" />
+	 <img src="gifs/1449628980_4123.gif" width="290" height="485" />
+	 <img src="gifs/1449629046_4805.gif" width="290" height="485" />
 </td>
 ## **使用说明**
 
