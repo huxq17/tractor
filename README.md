@@ -21,7 +21,6 @@ dependencies {
 
 
 ## **效果图**
-![效果图](gifs/1449480498_3231.gif)
 <td>
 	 <img src="gifs/1449480498_3231.gif" width="290" height="485" />
 	 <img src="gifs/1449480498_4123.gif" width="290" height="485" />
