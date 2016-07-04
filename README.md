@@ -21,14 +21,17 @@ dependencies {
 
 
 ## **效果图**
-![效果图](http://img.my.csdn.net/uploads/201512/07/1449480498_3231.gif)
-
+![效果图](gifs/1449480498_3231.gif)
+<td>
+	 <img src="gifs/1449480498_3231.gif" width="290" height="485" />
+	 <img src="gifs/1449480498_4123.gif" width="290" height="485" />
+	 <img src="gifs/1449480498_4805.gif" width="290" height="485" />
+</td>
 ## **使用说明**
 
 ###类图
 结构其实很简单，没有多少东西。
-![uml](http://img.my.csdn.net/uploads/201512/08/1449567185_3103.jpg)
-
+![uml](gifs/1449567185_3103.jpg)
 
 ###普通任务
 ```
