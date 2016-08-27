@@ -252,7 +252,7 @@ TaskPool.getInstance().cancelTask(tag|task);
 为了让任务管理器看起来更有用些，我封装了网络框架，实现是okhttp，可以支持head,get,post,多线程下载，大文件上传以及其他一些http请求。由于是面向接口编程，所以如果以后有更合适的库，可以很方便的就换掉okhttp。这部分的例子我就不贴出来了，感兴趣可以自己看代码，很简单，代码全在demo module的MainActivity里。
 下载：
 ![下载](http://img.my.csdn.net/uploads/201512/09/1449629046_4805.gif)
-上传打文件：
+上传大文件：
 ![上传打文件](http://img.my.csdn.net/uploads/201512/09/1449628980_4123.gif)
 
 ##**最后**
