@@ -212,7 +212,6 @@ public abstract class Task implements Runnable {
 //		cancelTask();
         notifyCancel(null);
         mHandler = null;
-        clear();
     }
 
     private void finish() {
@@ -220,11 +219,12 @@ public abstract class Task implements Runnable {
             // 默认加载成功
             mStatus = Status.SUCCESS;
             notifySuccess(null);
+        } else {
+            clear();
         }
-        clear();
     }
 
-    private void clear() {
+    private synchronized void clear() {
         if (isRunning()) {
             if (timeoutCountTask != null && !timeoutCountTask.hasFinished()) {
                 timeoutCountTask.cancel();
