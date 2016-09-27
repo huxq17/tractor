@@ -16,7 +16,7 @@ import java.lang.ref.WeakReference;
 public abstract class Task implements Runnable {
     private WeakReference<Object> mTag;
     private boolean mRunning = false;
-    private LoadHandler mHandler;
+    private volatile LoadHandler mHandler;
     private String mTaskName;
     /**
      * 任务的超时时间，值小于0，代表无限制 ，单位为毫秒
