@@ -537,7 +537,7 @@ public final class HttpEngine {
     }
 
     CookieHandler cookieHandler = client.getCookieHandler();
-    if (cookieHandler != null) {
+      if (cookieHandler != null) {
       // Capture the request headers added so far so that they can be offered to the CookieHandler.
       // This is mostly to stay close to the RI; it is unlikely any of the headers above would
       // affect cookie choice besides "Host".

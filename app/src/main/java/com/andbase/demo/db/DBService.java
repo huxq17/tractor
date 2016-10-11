@@ -15,14 +15,13 @@ import java.util.List;
 public class DBService {
     private DBHelper dbHelper;
     private static DBService instance;
+    private static final String DOWNLOAD_TABLE = "download_info";
 
     private DBService(Context context) {
         dbHelper = new DBHelper(context);
     }
 
     /**
-     * 单例模式,不必每次使用都重新new
-     *
      * @param context
      * @return
      */
@@ -31,7 +30,7 @@ public class DBService {
             throw new RuntimeException("context == null");
         }
         if (!(context instanceof Application)) {
-            throw new RuntimeException("For safety consideration，context should be applicationContext，use getApplicationContext() instead");
+            context = context.getApplicationContext();
         }
         if (instance == null) {
             synchronized (DBService.class) {
@@ -47,10 +46,10 @@ public class DBService {
     /**
      * 得到下载具体信息
      */
-    public List<DownloadInfo> getInfos(String urlstr) {
+    public synchronized List<DownloadInfo> getInfos(String urlstr) {
         List<DownloadInfo> list = new ArrayList<DownloadInfo>();
         SQLiteDatabase database = dbHelper.getReadableDatabase();
-        String sql = "select thread_id,startposition,endposition,url from download_info where url=?";
+        String sql = "select thread_id,startposition,endposition,url from "+DOWNLOAD_TABLE+" where url=?";
         Cursor cursor = database.rawQuery(sql, new String[]{urlstr});
         while (cursor.moveToNext()) {
             DownloadInfo info = new DownloadInfo(cursor.getInt(0), cursor.getInt(1), cursor.getLong(2),
@@ -67,12 +66,14 @@ public class DBService {
      * 更新数据库中的下载信息
      */
     public synchronized void updataInfos(int threadId, long startposition, long endposition, String url) {
+        long totalCount = getCount(DOWNLOAD_TABLE);
         SQLiteDatabase database = dbHelper.getReadableDatabase();
         // 如果存在就更新，不存在就插入
-        String sql = "replace into download_info(thread_id,startposition,endposition,url) values(?,?,?,?)";
+        String sql = "replace into " + DOWNLOAD_TABLE + "(thread_id,startposition,endposition,url) values(?,?,?,?)";
         Object[] bindArgs = {threadId, startposition, endposition, url};
         database.execSQL(sql, bindArgs);
-        LogUtils.i("update threadid=" + threadId + ";startposition=" + startposition + ";endposition=" + endposition);
+        database.close();
+        LogUtils.i("updataInfos total=" + totalCount + ";threadid=" + threadId + ";startposition=" + startposition + ";endposition=" + endposition);
     }
 
     /**
@@ -85,11 +86,22 @@ public class DBService {
     /**
      * 下载完成后删除数据库中的数据
      */
-    public void delete(String url) {
+    public synchronized void delete(String url) {
+        long totalCount = getCount(DOWNLOAD_TABLE);
         SQLiteDatabase database = dbHelper.getReadableDatabase();
-        int count = database.delete("download_info", "url=?", new String[]{url});
-        Log.i("delete", "delete count=" + count + ";url=" + url);
+        int count = database.delete(DOWNLOAD_TABLE, "url=?", new String[]{url});
+        Log.i("delete", "delete total=" + totalCount + ";delete count=" + count + ";url=" + url);
         database.close();
+    }
+
+    private long getCount(String table) {
+        SQLiteDatabase database = dbHelper.getReadableDatabase();
+        Cursor cursor = database.rawQuery("select count(*)from " + table, null);
+        cursor.moveToFirst();
+        long result = cursor.getLong(0);
+        cursor.close();
+        database.close();
+        return result;
     }
 
     public void saveOrUpdateInfos() {
@@ -98,7 +110,7 @@ public class DBService {
 
     public synchronized void deleteByIdAndUrl(int id, String url) {
         SQLiteDatabase database = dbHelper.getReadableDatabase();
-        int count = database.delete("download_info", "thread_id=? and url=?", new String[]{
+        int count = database.delete(DOWNLOAD_TABLE, "thread_id=? and url=?", new String[]{
                 id + "", url});
         Log.i("delete", "delete id=" + id + "," + "count=" + count);
         database.close();

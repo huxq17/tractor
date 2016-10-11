@@ -47,20 +47,20 @@ public class DownloadInfo {
         }
         completeSize += done;
         int process = (int) (100 * (1.0f * completeSize / fileLength));
-        LogUtils.d("completedsize=" + completeSize + ";filelength=" + fileLength);
         if (process != this.process) {
             this.process = process;
             task.notifyLoading(this.process);
         }
-        if (hasDownloadSuccess()) {
-            synchronized (task) {
-                task.notify();
-            }
-        }
+//        if (hasDownloadSuccess()) {
+////            synchronized (task) {
+//                task.notify();
+////            }
+//        }
         return true;
     }
 
     public boolean hasDownloadSuccess() {
+        LogUtils.d("hasDownloadSuccess completeSize="+completeSize+";fileLength="+fileLength);
         return completeSize >= fileLength;
     }
 

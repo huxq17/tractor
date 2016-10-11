@@ -20,6 +20,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import okio.Segment;
 
@@ -29,15 +30,29 @@ import okio.Segment;
 public class DownLoadTask extends Task {
     private DownloadInfo mDownloadInfo;
     private Context mContext;
+    private int mRunningThreadNum;
+    private AtomicInteger mFinishedThread;
 
     public DownLoadTask(final DownloadInfo info, final Context context, final LoadListener listener, final Object tag) {
         super(tag, listener);
         this.mDownloadInfo = info;
         mContext = context;
+        mFinishedThread = new AtomicInteger(0);
+        mRunningThreadNum = 0;
+    }
+
+    private void finishDownloadBlock() {
+        mFinishedThread.getAndIncrement();
+        if (mFinishedThread.get() == mRunningThreadNum && DownLoadTask.this.isRunning()) {
+            synchronized (DownLoadTask.this) {
+                DownLoadTask.this.notify();
+            }
+        }
     }
 
     @Override
     public void onRun() {
+//        mFinished = false;
         notifyStart("开始下载...");
         String url = mDownloadInfo.url;
         int threadNum = mDownloadInfo.threadNum;
@@ -52,6 +67,7 @@ public class DownLoadTask extends Task {
         int allocated = freeMemory / 6 / threadNum;//给每个线程分配的内存
         long completed = 0;
         List<DownloadInfo> donelist = DBService.getInstance(mContext).getInfos(url);
+        LogUtils.d("spendTime allocated = " + allocated + "donelist.size=" + donelist.size() + ";threadNum=" + threadNum);
         threadNum = donelist.size() == 0 ? threadNum : donelist.size();
         int size = 0;
         try {
@@ -60,7 +76,7 @@ public class DownLoadTask extends Task {
             constructor.setAccessible(true);
             Segment segment = (Segment) constructor.newInstance();
             Field field = segmentClass.getDeclaredField("SIZE");
-            field.setAccessible(true); // 抑制Java对修饰符的检查
+            field.setAccessible(true);
             field.set(segment, allocated);
             size = field.getInt(segment);
         } catch (Exception e) {
@@ -89,12 +105,15 @@ public class DownLoadTask extends Task {
                 } else {
                     mDownloadInfo.downloadId = i;
                 }
-                if (i == threadNum - 1) {
-                    mDownloadInfo.endPos = mDownloadInfo.endPos > fileLength ? fileLength : mDownloadInfo.endPos;
+                if (mDownloadInfo.downloadId == threadNum - 1) {
+                    mDownloadInfo.endPos = fileLength;
                 }
-                LogUtils.d("update done = " + completed + ";start=" + mDownloadInfo.startPos + ";end=" + endposition + ";filelength=" + fileLength
-                        + ";info.downloadId=" + mDownloadInfo.downloadId);
-                downBlock(mDownloadInfo, mContext, allocated, this, getTag());
+                if (mDownloadInfo.startPos < mDownloadInfo.endPos) {
+                    mRunningThreadNum++;
+                    LogUtils.d("startMultiThread start=" + mDownloadInfo.startPos + ";end=" + mDownloadInfo.endPos + ";filelength=" + fileLength
+                            + ";info.downloadId=" + mDownloadInfo.downloadId);
+                    downBlock(mDownloadInfo, mContext, allocated, this, getTag());
+                }
             }
         } else {
             mDownloadInfo.downloadId = 0;
@@ -107,7 +126,8 @@ public class DownLoadTask extends Task {
                 mDownloadInfo.endPos = blockInfo.endPos;
                 mDownloadInfo.fileLength = mDownloadInfo.endPos;
             }
-            LogUtils.d("update done = " + completed + ";start=" + mDownloadInfo.startPos + ";end=" + mDownloadInfo.endPos);
+            mRunningThreadNum++;
+            LogUtils.d("startSingleThread start=" + mDownloadInfo.startPos + ";end=" + mDownloadInfo.endPos);
             downBlock(mDownloadInfo, mContext, allocated, this, getTag());
         }
         synchronized (this) {
@@ -120,10 +140,10 @@ public class DownLoadTask extends Task {
         }
         if (!mDownloadInfo.hasDownloadSuccess()) {
             notifyFail(null);
-            LogUtils.i("download failed! " + "size=" + size + " allocated=" + allocated + " and spendTime=" + (System.currentTimeMillis() - starttime));
+            LogUtils.d("download failed! " + "size=" + size + " allocated=" + allocated + " and spendTime=" + (System.currentTimeMillis() - starttime));
         } else {
             DBService.getInstance(mContext).delete(url);
-            LogUtils.i("download finshed! " + "size=" + size + " allocated=" + allocated + " and spendTime=" + (System.currentTimeMillis() - starttime));
+            LogUtils.d("download finshed! " + "size=" + size + " allocated=" + allocated + " and spendTime=" + (System.currentTimeMillis() - starttime));
         }
     }
 
@@ -158,7 +178,7 @@ public class DownLoadTask extends Task {
         }
     }
 
-    private void downBlock(final DownloadInfo info, final Context context, final int allocated, final Task task, final Object tag) {
+    private void downBlock(final DownloadInfo info, final Context context, final int allocated, final DownLoadTask task, final Object tag) {
         final long startposition = info.startPos;
         final long endposition = info.endPos;
         final String url = info.url;
@@ -211,28 +231,31 @@ public class DownLoadTask extends Task {
                                 //当下载任务失败以后结束此下载线程
                                 break;
                             }
-                            LogUtils.d("len=" + len + ";curPos=" + curPos + ";end=" + endPos + "id=" + downloadId);
                             curPos += len;
                             accessFile.write(buffer, 0, len);
                         }
                     }
+                    LogUtils.d("curPos=" + curPos + ";end=" + endPos + "id=" + downloadId);
                 } catch (Exception e) {
                     e.printStackTrace();
-                    notifyDownloadFailed(e);
+//                    notifyDownloadFailed(e);
                 } finally {
+                    LogUtils.e("block " + "id=" + downloadId + " download finished" + ";info.hasDownloadSuccess()=" + info.hasDownloadSuccess());
                     if (!info.hasDownloadSuccess()) {
                         DBService.getInstance(context).updataInfos(downloadId, curPos, endPos, url);
                     }
                     Util.closeQuietly(inStream);
                     Util.closeQuietly(accessFile);
+                    task.finishDownloadBlock();
                 }
             }
 
             private void notifyDownloadFailed(Exception e) {
-                task.notifyFail(e);
-                synchronized (task) {
-                    task.notify();
-                }
+                task.finishDownloadBlock();
+//                task.notifyFail(e);
+//                synchronized (task) {
+//                    task.notify();
+//                }
             }
 
             @Override

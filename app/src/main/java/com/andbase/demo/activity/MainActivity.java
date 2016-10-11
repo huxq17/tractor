@@ -15,6 +15,7 @@ import com.andbase.demo.base.BaseActivity;
 import com.andbase.demo.bean.DownloadInfo;
 import com.andbase.demo.http.OKHttp;
 import com.andbase.demo.http.response.HttpResponse;
+import com.andbase.demo.utils.DataCleanManager;
 import com.andbase.demo.utils.HttpSender;
 import com.andbase.demo.utils.Utils;
 import com.andbase.tractor.listener.LoadListener;
@@ -34,7 +35,9 @@ import java.util.Random;
 public class MainActivity extends BaseActivity {
     private String domin = "http://192.168.2.199:8080/";
     private String domin1 = "http://down.sj.2144.cn/";
-    private String downloadUrl = domin1 + "sj/20151021/game/GuangYuBox_2144.apk";
+//    private String downloadUrl = domin1 + "sj/20151021/game/GuangYuBox_2144.apk";
+    private String downloadUrl = "http://192.168.22.51:8080/test/down.apk";
+    //    private String downloadUrl = "http://res.xlzj.2144gy.com/0/update/b0924/android/data/B0924_2144_XL_Android_Res_1/1025/UI/BaseUI/TeamDungeonHitRankPanel.assetbundle.zip";
     private String uploadUrl = domin + "UploadTest/Upload";
     private String postUrl = domin + "UploadTest/index";
     private String sdcardPath;
@@ -57,7 +60,7 @@ public class MainActivity extends BaseActivity {
 
     /**
      * Checks if the app has permission to write to device storage
-     * <p/>
+     * <p>
      * If the app does not has permission then the user will be prompted to grant permissions
      *
      * @param activity
@@ -79,6 +82,9 @@ public class MainActivity extends BaseActivity {
     public void onClick(View v) {
         int id = v.getId();
         switch (id) {
+            case R.id.bt_cleardata:
+                DataCleanManager.cleanDatabases(this);
+                break;
             case R.id.bt_task_normal:
                 //当LoadListenerImpl构造函数传入context，则显示progressdialog
                 doNormalTask(new LoadListenerImpl(this) {
