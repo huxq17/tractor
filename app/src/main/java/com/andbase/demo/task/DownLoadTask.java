@@ -6,6 +6,7 @@ import com.andbase.demo.bean.DownloadInfo;
 import com.andbase.demo.db.DBService;
 import com.andbase.demo.http.response.HttpResponse;
 import com.andbase.demo.utils.HttpSender;
+import com.andbase.demo.utils.Utils;
 import com.andbase.tractor.listener.LoadListener;
 import com.andbase.tractor.task.Task;
 import com.andbase.tractor.task.TaskPool;
@@ -39,6 +40,14 @@ public class DownLoadTask extends Task {
         mContext = context;
         mFinishedThread = new AtomicInteger(0);
         mRunningThreadNum = 0;
+        Utils.createDirIfNotExists(mDownloadInfo.fileDir);
+//        List list = DBService.getInstance(mContext).getInfos(info.url);
+//        if (list.size() == 0) {
+//            File downloadFile = new File(info.fileDir, info.filename);
+//            if (downloadFile.exists()) {
+//                Utils.deleteFileSafely(downloadFile);
+//            }
+//        }
     }
 
     private void finishDownloadBlock() {
@@ -65,6 +74,7 @@ public class DownLoadTask extends Task {
         final long starttime = System.currentTimeMillis();
         int freeMemory = ((int) Runtime.getRuntime().freeMemory());// 获取应用剩余可用内存
         int allocated = freeMemory / 6 / threadNum;//给每个线程分配的内存
+//        int allocated = 8092;
         long completed = 0;
         List<DownloadInfo> donelist = DBService.getInstance(mContext).getInfos(url);
         LogUtils.d("spendTime allocated = " + allocated + "donelist.size=" + donelist.size() + ";threadNum=" + threadNum);
@@ -208,16 +218,17 @@ public class DownLoadTask extends Task {
                     accessFile = new RandomAccessFile(saveFile, "rwd");
                     if (startposition < 0) {
                         info.fileLength = downloadResponse.getContentLength();
-                        setFileLength(info.fileDir, info.filename, info.fileLength);
+                        accessFile.setLength(info.fileLength);
+                        curPos = 0;
                         endPos = info.fileLength;
-                        accessFile.seek(0);
+                        accessFile.seek(curPos);
                     } else {
                         accessFile.seek(startposition);
                     }
                     byte[] buffer = new byte[allocated];
 //                    byte[] buffer = new byte[2048];
                     int len = 0;
-                    while (curPos < endPos) {
+                    while (curPos <= endPos) {
                         len = inStream.read(buffer);
                         if (len == -1) {
 //                            notifyDownloadFailed(null);
@@ -235,7 +246,7 @@ public class DownLoadTask extends Task {
                             accessFile.write(buffer, 0, len);
                         }
                     }
-                    LogUtils.d("curPos=" + curPos + ";end=" + endPos + "id=" + downloadId);
+                    LogUtils.e("curPos=" + curPos + ";endPos=" + endPos);
                 } catch (Exception e) {
                     e.printStackTrace();
 //                    notifyDownloadFailed(e);
@@ -265,18 +276,11 @@ public class DownLoadTask extends Task {
         });
     }
 
-    public void setFileLength(final String fileDir, final String fileName, long filelength) {
-        File dir = new File(fileDir);
-        if (!dir.exists()) {
-            dir.mkdirs();
-        }
+    public void setFileLength(String fileDir, final String fileName, long filelength) {
+        Utils.createDirIfNotExists(fileDir);
         RandomAccessFile accessFile = null;
         try {
             File downloadFile = new File(fileDir, fileName);
-            //TODO 需要考虑文件已存在的情况
-//            if (downloadFile.exists()) {
-//                downloadFile.delete();
-//            }
             accessFile = new RandomAccessFile(downloadFile, "rwd");
             accessFile.setLength(filelength);// 设置本地文件的长度和下载文件相同
             accessFile.close();

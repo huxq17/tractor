@@ -46,6 +46,7 @@ public class DownloadInfo {
             return false;
         }
         completeSize += done;
+//        LogUtils.d("completeSize=" + completeSize + ";done=" + done);
         int process = (int) (100 * (1.0f * completeSize / fileLength));
         if (process != this.process) {
             this.process = process;
@@ -60,7 +61,7 @@ public class DownloadInfo {
     }
 
     public boolean hasDownloadSuccess() {
-        LogUtils.d("hasDownloadSuccess completeSize="+completeSize+";fileLength="+fileLength);
+        LogUtils.d("hasDownloadSuccess completeSize=" + completeSize + ";fileLength=" + fileLength);
         return completeSize >= fileLength;
     }
 
