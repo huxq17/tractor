@@ -11,6 +11,15 @@ public class HttpResponse implements Serializable {
     private long contentLength;
     private InputStream inputStream;
     private ResponseType type;
+    private int code;
+
+    public void setCode(int code) {
+        this.code = code;
+    }
+
+    public int code() {
+        return code;
+    }
 
     public void setContentLength(long contentLength) {
         this.contentLength = contentLength;

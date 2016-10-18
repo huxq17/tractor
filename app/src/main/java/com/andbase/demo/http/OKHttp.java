@@ -266,6 +266,7 @@ public class OKHttp implements HttpBase {
                         httpResponse.setInputStream(response.body().byteStream());
                         break;
                 }
+                httpResponse.setCode(response.code());
                 httpResponse.setString(string);
                 httpResponse.setContentLength(response.body().contentLength());
             } catch (Exception e) {
@@ -317,6 +318,7 @@ public class OKHttp implements HttpBase {
                         httpResponse.setInputStream(response.body().byteStream());
                         break;
                 }
+                httpResponse.setCode(response.code());
                 notifySuccess(httpResponse);
             } catch (Exception e) {
                 if (e.toString().toLowerCase().contains("canceled")

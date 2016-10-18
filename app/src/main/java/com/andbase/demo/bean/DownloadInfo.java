@@ -41,12 +41,12 @@ public class DownloadInfo {
      * @param done
      */
     public boolean compute(Task task, long done) {
+//        LogUtils.d("completeSize=" + completeSize + ";done=" + done+";task.isRunning="+task.isRunning());
         if (task == null || !task.isRunning()) {
             //当下载任务不在运行时，返回false，主要用于其他下载子线程停止下载动作
             return false;
         }
         completeSize += done;
-//        LogUtils.d("completeSize=" + completeSize + ";done=" + done);
         int process = (int) (100 * (1.0f * completeSize / fileLength));
         if (process != this.process) {
             this.process = process;

@@ -63,20 +63,18 @@ public class DownLoadTask extends Task {
     public void onRun() {
 //        mFinished = false;
         notifyStart("开始下载...");
-        String url = mDownloadInfo.url;
         int threadNum = mDownloadInfo.threadNum;
         if (threadNum < 1) {
             throw new RuntimeException("threadNum < 1");
         }
         //如果文件不存在就删除数据库中的缓存
-        deleteCache(mDownloadInfo, url);
-        long block = -1;
+        deleteCache(mDownloadInfo, mDownloadInfo.url);
         final long starttime = System.currentTimeMillis();
         int freeMemory = ((int) Runtime.getRuntime().freeMemory());// 获取应用剩余可用内存
         int allocated = freeMemory / 6 / threadNum;//给每个线程分配的内存
 //        int allocated = 8092;
         long completed = 0;
-        List<DownloadInfo> donelist = DBService.getInstance(mContext).getInfos(url);
+        List<DownloadInfo> donelist = DBService.getInstance(mContext).getInfos(mDownloadInfo.url);
         LogUtils.d("spendTime allocated = " + allocated + "donelist.size=" + donelist.size() + ";threadNum=" + threadNum);
         threadNum = donelist.size() == 0 ? threadNum : donelist.size();
         int size = 0;
@@ -93,52 +91,9 @@ public class DownLoadTask extends Task {
             e.printStackTrace();
         }
         if (threadNum > 1) {
-            long fileLength = getFileLength(donelist, url);
-            if (fileLength <= 0) {
-                notifyFail("获取下载文件信息失败");
-            }
-            mDownloadInfo.fileLength = fileLength;
-            setFileLength(mDownloadInfo.fileDir, mDownloadInfo.filename, mDownloadInfo.fileLength);
-            block = fileLength % threadNum == 0 ? fileLength / threadNum : fileLength / threadNum + 1;
-
-            for (int i = 0; i < threadNum; i++) {
-                final long startposition = i * block;
-                final long endposition = (i + 1) * block - 1;
-                mDownloadInfo.startPos = startposition;
-                mDownloadInfo.endPos = endposition;
-                if (i < donelist.size()) {
-                    DownloadInfo blockInfo = donelist.get(i);
-                    mDownloadInfo.downloadId = blockInfo.downloadId;
-                    completed += blockInfo.startPos - mDownloadInfo.startPos;
-                    mDownloadInfo.startPos = blockInfo.startPos;
-                    mDownloadInfo.endPos = blockInfo.endPos;
-                } else {
-                    mDownloadInfo.downloadId = i;
-                }
-                if (mDownloadInfo.downloadId == threadNum - 1) {
-                    mDownloadInfo.endPos = fileLength;
-                }
-                if (mDownloadInfo.startPos < mDownloadInfo.endPos) {
-                    mRunningThreadNum++;
-                    LogUtils.d("startMultiThread start=" + mDownloadInfo.startPos + ";end=" + mDownloadInfo.endPos + ";filelength=" + fileLength
-                            + ";info.downloadId=" + mDownloadInfo.downloadId);
-                    downBlock(mDownloadInfo, mContext, allocated, this, getTag());
-                }
-            }
+            completed = startMultiThreadDownLoad(mDownloadInfo, donelist, allocated,threadNum);
         } else {
-            mDownloadInfo.downloadId = 0;
-            mDownloadInfo.startPos = -1;
-            mDownloadInfo.endPos = -1;
-            if (donelist.size() == 1) {
-                DownloadInfo blockInfo = donelist.get(0);
-                completed = blockInfo.startPos;
-                mDownloadInfo.startPos = completed;
-                mDownloadInfo.endPos = blockInfo.endPos;
-                mDownloadInfo.fileLength = mDownloadInfo.endPos;
-            }
-            mRunningThreadNum++;
-            LogUtils.d("startSingleThread start=" + mDownloadInfo.startPos + ";end=" + mDownloadInfo.endPos);
-            downBlock(mDownloadInfo, mContext, allocated, this, getTag());
+            completed = startSingleThreadDownLoad(mDownloadInfo, donelist, allocated);
         }
         synchronized (this) {
             mDownloadInfo.compute(this, completed);
@@ -152,9 +107,64 @@ public class DownLoadTask extends Task {
             notifyFail(null);
             LogUtils.d("download failed! " + "size=" + size + " allocated=" + allocated + " and spendTime=" + (System.currentTimeMillis() - starttime));
         } else {
-            DBService.getInstance(mContext).delete(url);
+            DBService.getInstance(mContext).delete(mDownloadInfo.url);
             LogUtils.d("download finshed! " + "size=" + size + " allocated=" + allocated + " and spendTime=" + (System.currentTimeMillis() - starttime));
         }
+    }
+
+    private long startMultiThreadDownLoad(DownloadInfo mDownloadInfo, List<DownloadInfo> donelist, int allocated, int threadNum) {
+        long completed = 0;
+        long fileLength = getFileLength(donelist, mDownloadInfo.url);
+        if (fileLength <= 0) {
+            notifyFail("获取下载文件信息失败");
+        }
+        mDownloadInfo.fileLength = fileLength;
+        setFileLength(mDownloadInfo.fileDir, mDownloadInfo.filename, mDownloadInfo.fileLength);
+        long block = fileLength % threadNum == 0 ? fileLength / threadNum : fileLength / threadNum + 1;
+
+        for (int i = 0; i < threadNum; i++) {
+            final long startposition = i * block;
+            final long endposition = (i + 1) * block - 1;
+            mDownloadInfo.startPos = startposition;
+            mDownloadInfo.endPos = endposition;
+            if (i < donelist.size()) {
+                DownloadInfo blockInfo = donelist.get(i);
+                mDownloadInfo.downloadId = blockInfo.downloadId;
+                completed += blockInfo.startPos - mDownloadInfo.startPos;
+                mDownloadInfo.startPos = blockInfo.startPos;
+                mDownloadInfo.endPos = blockInfo.endPos;
+            } else {
+                mDownloadInfo.downloadId = i;
+            }
+            if (mDownloadInfo.downloadId == threadNum - 1) {
+                mDownloadInfo.endPos = fileLength;
+            }
+            if (mDownloadInfo.startPos < mDownloadInfo.endPos) {
+                mRunningThreadNum++;
+                LogUtils.d("startMultiThread start=" + mDownloadInfo.startPos + ";end=" + mDownloadInfo.endPos + ";filelength=" + fileLength
+                        + ";info.downloadId=" + mDownloadInfo.downloadId);
+                downBlock(mDownloadInfo, mContext, allocated, this, getTag());
+            }
+        }
+        return completed;
+    }
+
+    private long startSingleThreadDownLoad(DownloadInfo mDownloadInfo, List<DownloadInfo> donelist, int allocated) {
+        mDownloadInfo.downloadId = 0;
+        mDownloadInfo.startPos = -1;
+        mDownloadInfo.endPos = -1;
+        long completed = 0;
+        if (donelist.size() == 1) {
+            DownloadInfo blockInfo = donelist.get(0);
+            completed = blockInfo.startPos;
+            mDownloadInfo.startPos = completed;
+            mDownloadInfo.endPos = blockInfo.endPos;
+            mDownloadInfo.fileLength = mDownloadInfo.endPos;
+        }
+        mRunningThreadNum++;
+        LogUtils.d("startSingleThread start=" + mDownloadInfo.startPos + ";end=" + mDownloadInfo.endPos);
+        downBlock(mDownloadInfo, mContext, allocated, this, getTag());
+        return completed;
     }
 
     private void deleteCache(DownloadInfo info, String url) {
@@ -226,7 +236,7 @@ public class DownLoadTask extends Task {
                         accessFile.seek(startposition);
                     }
                     byte[] buffer = new byte[allocated];
-//                    byte[] buffer = new byte[2048];
+//                    byte[] buffer = new byte[8192];
                     int len = 0;
                     while (curPos <= endPos) {
                         len = inStream.read(buffer);
@@ -246,12 +256,12 @@ public class DownLoadTask extends Task {
                             accessFile.write(buffer, 0, len);
                         }
                     }
-                    LogUtils.e("curPos=" + curPos + ";endPos=" + endPos);
+                    LogUtils.d("curPos=" + curPos + ";endPos=" + endPos);
                 } catch (Exception e) {
                     e.printStackTrace();
 //                    notifyDownloadFailed(e);
                 } finally {
-                    LogUtils.e("block " + "id=" + downloadId + " download finished" + ";info.hasDownloadSuccess()=" + info.hasDownloadSuccess());
+//                    LogUtils.e("block " + "id=" + downloadId + " download finished" + ";info.hasDownloadSuccess()=" + info.hasDownloadSuccess());
                     if (!info.hasDownloadSuccess()) {
                         DBService.getInstance(context).updataInfos(downloadId, curPos, endPos, url);
                     }
