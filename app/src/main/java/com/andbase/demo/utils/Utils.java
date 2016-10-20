@@ -3,6 +3,7 @@ package com.andbase.demo.utils;
 import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
+import android.text.TextUtils;
 
 import java.io.File;
 
@@ -37,4 +38,37 @@ public class Utils {
         }
     }
 
+    /**
+     * 删除文件
+     */
+    public static boolean delete(String filePathName) {
+        if (TextUtils.isEmpty(filePathName)) return false;
+        File file = new File(filePathName);
+        return deleteFileSafely(file);
+    }
+
+    /**
+     * 重命名
+     *
+     * @param filePathName 原始文件路径
+     * @param newPathName  新的文件路径
+     * @return 是否成功
+     */
+    public static boolean rename(String filePathName, String newPathName) {
+        if (TextUtils.isEmpty(filePathName)) return false;
+        if (TextUtils.isEmpty(newPathName)) return false;
+
+        delete(newPathName);
+
+        File file = new File(filePathName);
+        File newFile = new File(newPathName);
+        if (!file.exists()) {
+            return false;
+        }
+        File parentFile = newFile.getParentFile();
+        if (!parentFile.exists()) {
+            parentFile.mkdirs();
+        }
+        return file.renameTo(newFile);
+    }
 }

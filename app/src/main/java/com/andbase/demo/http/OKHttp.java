@@ -65,10 +65,8 @@ public class OKHttp implements HttpBase {
 //        mOkHttpClient.networkInterceptors().add(new RedirectInterceptor());
         int versionCode = Build.VERSION.SDK_INT;
         if (versionCode >= 9) {
-            mOkHttpClient.setCookieHandler(new CookieManager(null,
-                    CookiePolicy.ACCEPT_ORIGINAL_SERVER));
-            mOkHttpClient.setCookieHandler(new CookieManager(
-                    new PersistentCookieStore(context.getApplicationContext()), CookiePolicy.ACCEPT_ALL));
+            mOkHttpClient.setCookieHandler(new CookieManager(null,CookiePolicy.ACCEPT_ORIGINAL_SERVER));
+            mOkHttpClient.setCookieHandler(new CookieManager(new PersistentCookieStore(context), CookiePolicy.ACCEPT_ALL));
 //            StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitNetwork().build();
 //            StrictMode.setThreadPolicy(policy);
         }

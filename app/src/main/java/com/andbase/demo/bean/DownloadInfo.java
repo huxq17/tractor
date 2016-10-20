@@ -16,6 +16,8 @@ public class DownloadInfo {
     public String filePath;//文件保存路径
     public String fileDir;//保存文件的文件夹路径
     public String filename;//保存的文件名
+    public String tempFileName;
+    public String tempFilePath;
     public int threadNum;
     private int process;
 
@@ -25,6 +27,8 @@ public class DownloadInfo {
         this.filename = filename;
         this.filePath = this.fileDir + this.filename;
         this.threadNum = threadNum;
+        this.tempFileName = filename + ".temp";
+        this.tempFilePath = this.fileDir + this.tempFileName;
     }
 
     public DownloadInfo(int downloadId,

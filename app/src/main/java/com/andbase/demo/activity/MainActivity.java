@@ -36,8 +36,6 @@ public class MainActivity extends BaseActivity {
     private String domin = "http://192.168.2.199:8080/";
     private String domin1 = "http://down.sj.2144.cn/";
     private String downloadUrl = domin1 + "sj/20151021/game/GuangYuBox_2144.apk";
-//    private String downloadUrl = "http://219.138.28.34/file3.data.weipan.cn/166609501/6093cd38556de29c787ea271b952d713abfa943e?ip=1476770718,222.73.203.30&ssig=eG31eGcNmA&Expires=1476772508&KID=sae,l30zoo1wmz&fn=%E6%9D%8E%E8%8D%A3%E6%B5%A9%20-%20%E7%88%B8%E7%88%B8%E5%A6%88%E5%A6%88.mp3&skiprd=2&se_ip_debug=222.73.203.30&corp=2&from=1221134&wsiphost=local";
-    //    private String downloadUrl = "http://res.xlzj.2144gy.com/0/update/b0924/android/data/B0924_2144_XL_Android_Res_1/1025/UI/BaseUI/TeamDungeonHitRankPanel.assetbundle.zip";
     private String uploadUrl = domin + "UploadTest/Upload";
     private String postUrl = domin + "UploadTest/index";
     private String sdcardPath;

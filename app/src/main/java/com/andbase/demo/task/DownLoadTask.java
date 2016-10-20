@@ -91,7 +91,7 @@ public class DownLoadTask extends Task {
             e.printStackTrace();
         }
         if (threadNum > 1) {
-            completed = startMultiThreadDownLoad(mDownloadInfo, donelist, allocated,threadNum);
+            completed = startMultiThreadDownLoad(mDownloadInfo, donelist, allocated, threadNum);
         } else {
             completed = startSingleThreadDownLoad(mDownloadInfo, donelist, allocated);
         }
@@ -108,6 +108,7 @@ public class DownLoadTask extends Task {
             LogUtils.d("download failed! " + "size=" + size + " allocated=" + allocated + " and spendTime=" + (System.currentTimeMillis() - starttime));
         } else {
             DBService.getInstance(mContext).delete(mDownloadInfo.url);
+            Utils.rename(mDownloadInfo.tempFilePath, mDownloadInfo.filePath);
             LogUtils.d("download finshed! " + "size=" + size + " allocated=" + allocated + " and spendTime=" + (System.currentTimeMillis() - starttime));
         }
     }
@@ -119,7 +120,7 @@ public class DownLoadTask extends Task {
             notifyFail("获取下载文件信息失败");
         }
         mDownloadInfo.fileLength = fileLength;
-        setFileLength(mDownloadInfo.fileDir, mDownloadInfo.filename, mDownloadInfo.fileLength);
+        setFileLength(mDownloadInfo.fileDir, mDownloadInfo.tempFileName, mDownloadInfo.fileLength);
         long block = fileLength % threadNum == 0 ? fileLength / threadNum : fileLength / threadNum + 1;
 
         for (int i = 0; i < threadNum; i++) {
@@ -168,7 +169,7 @@ public class DownLoadTask extends Task {
     }
 
     private void deleteCache(DownloadInfo info, String url) {
-        File file = new File(info.filePath);
+        File file = new File(info.tempFilePath);
         if (!file.exists()) {
             DBService.getInstance(mContext).delete(url);
         }
@@ -202,7 +203,7 @@ public class DownLoadTask extends Task {
         final long startposition = info.startPos;
         final long endposition = info.endPos;
         final String url = info.url;
-        final String filepath = info.filePath;
+        final String filepath = info.tempFilePath;
         final int downloadId = info.downloadId;
         TaskPool.getInstance().execute(new Task() {
             private long curPos = startposition;
