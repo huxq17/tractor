@@ -100,12 +100,19 @@ public class HttpSender {
         return response;
     }
 
-    public void upload(String url, LinkedHashMap<String, String> headers, LinkedHashMap<String,File> files, LinkedHashMap<String, Object> params, LoadListener listener, Object tag) {
+    public HttpResponse getSync(String url, Object... tag) {
+        HttpRequest.Builder builder = new HttpRequest.Builder();
+        builder.url(url).synchron().noBody();
+        HttpResponse response = mHttpBase.get(builder.build(), null, tag);
+        return response;
+    }
+
+    public void upload(String url, LinkedHashMap<String, String> headers, LinkedHashMap<String, File> files, LinkedHashMap<String, Object> params, LoadListener listener, Object tag) {
         HttpRequest.Builder builder = new HttpRequest.Builder();
         builder.url(url).setParams(params);
         addHeaders(builder, headers);
-        for (LinkedHashMap.Entry<String,File> set : files.entrySet()) {
-            builder.addFile(set.getKey(),set.getValue());
+        for (LinkedHashMap.Entry<String, File> set : files.entrySet()) {
+            builder.addFile(set.getKey(), set.getValue());
         }
         mHttpBase.post(builder.build(), listener, tag);
     }

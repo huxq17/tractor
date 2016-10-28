@@ -14,6 +14,7 @@ public class HttpRequest {
     private RequestParams requestParams;
     private String url;
     private boolean synchron = false;
+    private boolean noBody = false;
     private ResponseType responseType;
 
 
@@ -36,6 +37,9 @@ public class HttpRequest {
     public boolean isSynchron() {
         return synchron;
     }
+    public boolean noBody(){
+        return noBody;
+    }
 
     public ResponseType responseType() {
         return responseType;
@@ -47,6 +51,7 @@ public class HttpRequest {
         this.requestParams = builder.requestParams;
         this.url = builder.url;
         this.synchron = builder.synchron;
+        this.noBody = builder.noBody;
         this.responseType = builder.responseType;
     }
 
@@ -56,6 +61,7 @@ public class HttpRequest {
         private RequestParams requestParams;
         private String url;
         private boolean synchron = false;
+        private boolean noBody = false;
         private ResponseType responseType;
 
         public Builder() {
@@ -93,6 +99,15 @@ public class HttpRequest {
          */
         public Builder synchron() {
             this.synchron = true;
+            return this;
+        }
+
+        /**
+         * 不获取http body
+         * @return
+         */
+        public Builder noBody() {
+            this.noBody = true;
             return this;
         }
 

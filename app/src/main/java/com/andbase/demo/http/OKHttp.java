@@ -53,8 +53,8 @@ public class OKHttp implements HttpBase {
         if (hasInited) {
             return;
         }
-        if(context==null){
-            throw  new RuntimeException("context==null");
+        if (context == null) {
+            throw new RuntimeException("context==null");
         }
         hasInited = true;
         mOkHttpClient = new OkHttpClient();
@@ -65,7 +65,7 @@ public class OKHttp implements HttpBase {
 //        mOkHttpClient.networkInterceptors().add(new RedirectInterceptor());
         int versionCode = Build.VERSION.SDK_INT;
         if (versionCode >= 9) {
-            mOkHttpClient.setCookieHandler(new CookieManager(null,CookiePolicy.ACCEPT_ORIGINAL_SERVER));
+            mOkHttpClient.setCookieHandler(new CookieManager(null, CookiePolicy.ACCEPT_ORIGINAL_SERVER));
             mOkHttpClient.setCookieHandler(new CookieManager(new PersistentCookieStore(context), CookiePolicy.ACCEPT_ALL));
 //            StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitNetwork().build();
 //            StrictMode.setThreadPolicy(policy);
@@ -94,6 +94,7 @@ public class OKHttp implements HttpBase {
         RequestParams requestParams = request.getRequestParams();
         HttpHeader header = request.getHeader();
         boolean synchron = request.isSynchron();
+        boolean noBody = request.noBody();
         String params = requestParams.toString();
         if (!TextUtils.isEmpty(params)) {
             url += "?" + params;
@@ -104,7 +105,7 @@ public class OKHttp implements HttpBase {
         addHeader(builder, header);
         addTag(builder, tag);
         ResponseType responseType = request.responseType();
-        return execute(responseType, builder.build(), synchron, listener, getTag(tag));
+        return execute(responseType, builder.build(), synchron, noBody, listener, getTag(tag));
     }
 
     @Override
@@ -116,6 +117,7 @@ public class OKHttp implements HttpBase {
         RequestParams requestParams = request.getRequestParams();
         HttpHeader header = request.getHeader();
         boolean synchron = request.isSynchron();
+        boolean noBody = request.noBody();
 
         RequestBody requestBody = buildRequestBody(requestParams);
         if (requestBody == null) {
@@ -125,7 +127,7 @@ public class OKHttp implements HttpBase {
         addHeader(builder, header);
         addTag(builder, tag);
         ResponseType responseType = request.responseType();
-        return execute(responseType, builder.build(), synchron, listener, getTag(tag));
+        return execute(responseType, builder.build(), synchron, noBody, listener, getTag(tag));
     }
 
     @Override
@@ -136,6 +138,7 @@ public class OKHttp implements HttpBase {
         RequestParams requestParams = request.getRequestParams();
         HttpHeader header = request.getHeader();
         boolean synchron = request.isSynchron();
+        boolean noBody = request.noBody();
 
         HttpMethod method = request.getMethod();
         LogUtils.d(method.toString() + " url=" + url);
@@ -164,7 +167,7 @@ public class OKHttp implements HttpBase {
         }
         addTag(builder, tag);
         ResponseType responseType = request.responseType();
-        return execute(responseType, builder.build(), synchron, listener, getTag(tag));
+        return execute(responseType, builder.build(), synchron, noBody, listener, getTag(tag));
     }
 
     private RequestBody buildRequestBody(RequestParams requestParams) {
@@ -240,7 +243,7 @@ public class OKHttp implements HttpBase {
         return new Request.Builder();
     }
 
-    private HttpResponse execute(ResponseType type, Request request, boolean synchron, LoadListener listener, Object tag) {
+    private HttpResponse execute(ResponseType type, Request request, boolean synchron, boolean nobody, LoadListener listener, Object tag) {
         final Call call = mOkHttpClient.newCall(request);
         HttpResponse httpResponse = null;
         if (synchron) {
@@ -249,21 +252,24 @@ public class OKHttp implements HttpBase {
                 httpResponse = new HttpResponse();
                 httpResponse.setResponseType(type);
                 String string = null;
-                switch (type) {
-                    case String:
-                        try {
-                            string = response.body().string();
-                        } catch (IOException e) {
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                        }
-                        httpResponse.setString(string);
-                        LogUtils.i("okresult: " + string);
-                        break;
-                    case InputStream:
-                        httpResponse.setInputStream(response.body().byteStream());
-                        break;
+                if (!nobody) {
+                    switch (type) {
+                        case String:
+                            try {
+                                string = response.body().string();
+                            } catch (IOException e) {
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
+                            httpResponse.setString(string);
+                            LogUtils.i("okresult: " + string);
+                            break;
+                        case InputStream:
+                            httpResponse.setInputStream(response.body().byteStream());
+                            break;
+                    }
                 }
+
                 httpResponse.setCode(response.code());
                 httpResponse.setString(string);
                 httpResponse.setContentLength(response.body().contentLength());
@@ -271,7 +277,7 @@ public class OKHttp implements HttpBase {
                 e.printStackTrace();
             }
         } else {
-            netWorkTask.setCall(type, call, tag, listener);
+            netWorkTask.setCall(type, call, nobody, tag, listener);
             TaskPool.getInstance().execute(netWorkTask);
         }
         return httpResponse;
@@ -280,12 +286,14 @@ public class OKHttp implements HttpBase {
     public class NetWorkTask extends Task {
         private Call mCall;
         private ResponseType mType;
+        private boolean nobody;
 
-        public void setCall(ResponseType type, Call call, Object tag, LoadListener listener) {
+        public void setCall(ResponseType type, Call call, boolean nobody, Object tag, LoadListener listener) {
             mCall = call;
             setTag(tag);
             setListener(listener);
             mType = type;
+            this.nobody = nobody;
         }
 
         @Override
@@ -301,22 +309,25 @@ public class OKHttp implements HttpBase {
                 String string = null;
                 httpResponse.setContentLength(response.body().contentLength());
                 httpResponse.setResponseType(mType);
-                switch (mType) {
-                    case String:
-                        try {
-                            string = response.body().string();
-                        } catch (IOException e) {
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                        }
-                        httpResponse.setString(string);
-                        LogUtils.d("okresult: " + string + ";contentLength=" + response.body().contentLength());
-                        break;
-                    case InputStream:
-                        httpResponse.setInputStream(response.body().byteStream());
-                        break;
+                if (!nobody) {
+                    switch (mType) {
+                        case String:
+                            try {
+                                string = response.body().string();
+                            } catch (IOException e) {
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
+                            httpResponse.setString(string);
+                            LogUtils.d("okresult: " + string + ";contentLength=" + response.body().contentLength());
+                            break;
+                        case InputStream:
+                            httpResponse.setInputStream(response.body().byteStream());
+                            break;
+                    }
                 }
                 httpResponse.setCode(response.code());
+                httpResponse.setContentLength(response.body().contentLength());
                 notifySuccess(httpResponse);
             } catch (Exception e) {
                 if (e.toString().toLowerCase().contains("canceled")

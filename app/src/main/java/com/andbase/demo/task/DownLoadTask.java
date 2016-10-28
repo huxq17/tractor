@@ -183,7 +183,7 @@ public class DownLoadTask extends Task {
             }
         }
         if (length <= 0) {
-            HttpResponse headResponse = HttpSender.instance().headerSync(url, getTag());
+            HttpResponse headResponse = HttpSender.instance().getSync(url, getTag());
             if (headResponse != null) {
                 length = headResponse.getContentLength();
             }
