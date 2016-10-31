@@ -18,6 +18,7 @@ import com.andbase.tractor.listener.LoadListener;
 import com.andbase.tractor.task.Task;
 import com.andbase.tractor.task.TaskPool;
 import com.andbase.tractor.utils.LogUtils;
+import com.andbase.tractor.utils.Util;
 
 import java.io.File;
 import java.io.IOException;
@@ -246,9 +247,10 @@ public class OKHttp implements HttpBase {
     private HttpResponse execute(ResponseType type, Request request, boolean synchron, boolean nobody, LoadListener listener, Object tag) {
         final Call call = mOkHttpClient.newCall(request);
         HttpResponse httpResponse = null;
+        Response response = null;
         if (synchron) {
             try {
-                Response response = call.execute();
+                response = call.execute();
                 httpResponse = new HttpResponse();
                 httpResponse.setResponseType(type);
                 String string = null;
@@ -268,6 +270,8 @@ public class OKHttp implements HttpBase {
                             httpResponse.setInputStream(response.body().byteStream());
                             break;
                     }
+                } else {
+                    closeResponseBody(response);
                 }
                 httpResponse.setCode(response.code());
                 httpResponse.setString(string);
@@ -280,6 +284,12 @@ public class OKHttp implements HttpBase {
             TaskPool.getInstance().execute(netWorkTask);
         }
         return httpResponse;
+    }
+
+    private void closeResponseBody(Response response) {
+        if (response != null) {
+            Util.closeQuietly(response.body());
+        }
     }
 
     public class NetWorkTask extends Task {
@@ -323,6 +333,8 @@ public class OKHttp implements HttpBase {
                             httpResponse.setInputStream(response.body().byteStream());
                             break;
                     }
+                } else {
+                    closeResponseBody(response);
                 }
                 httpResponse.setCode(response.code());
                 httpResponse.setContentLength(response.body().contentLength());

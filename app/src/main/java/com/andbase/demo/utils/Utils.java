@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.net.Uri;
 import android.text.TextUtils;
 
+import java.io.Closeable;
 import java.io.File;
 
 /**
@@ -45,6 +46,19 @@ public class Utils {
         if (TextUtils.isEmpty(filePathName)) return false;
         File file = new File(filePathName);
         return deleteFileSafely(file);
+    }
+
+    /**
+     * 关闭流
+     *
+     * @param closeable closeable
+     */
+    public static void close(Closeable closeable) {
+        try {
+            if (closeable != null) closeable.close();
+        } catch (Throwable e) {
+            e.printStackTrace();
+        }
     }
 
     /**
