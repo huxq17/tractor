@@ -90,7 +90,7 @@ public class DBService {
         long totalCount = getCount(DOWNLOAD_TABLE);
         SQLiteDatabase database = dbHelper.getReadableDatabase();
         int count = database.delete(DOWNLOAD_TABLE, "url=?", new String[]{url});
-        Log.i("delete", "delete total=" + totalCount + ";delete count=" + count + ";url=" + url);
+//        Log.i("delete", "delete total=" + totalCount + ";delete count=" + count + ";url=" + url);
         database.close();
     }
 
