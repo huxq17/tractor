@@ -103,7 +103,7 @@ public class HttpRequest {
         }
 
         /**
-         * 不获取http body
+         * 不获取http body，默认获取body
          * @return
          */
         public Builder noBody() {

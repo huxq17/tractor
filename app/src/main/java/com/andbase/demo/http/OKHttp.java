@@ -269,7 +269,6 @@ public class OKHttp implements HttpBase {
                             break;
                     }
                 }
-
                 httpResponse.setCode(response.code());
                 httpResponse.setString(string);
                 httpResponse.setContentLength(response.body().contentLength());
@@ -299,7 +298,6 @@ public class OKHttp implements HttpBase {
         @Override
         public void onRun() {
             execute();
-//            enqueue();
         }
 
         private void execute() {
