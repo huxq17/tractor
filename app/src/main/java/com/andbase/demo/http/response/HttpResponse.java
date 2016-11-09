@@ -7,11 +7,14 @@ import java.io.Serializable;
  * Created by huxq17 on 2015/11/28.
  */
 public class HttpResponse implements Serializable {
-    private String string;
     private long contentLength;
-    private InputStream inputStream;
     private ResponseType type;
     private int code;
+    private Body mBody;
+
+    public HttpResponse() {
+        mBody = new Body();
+    }
 
     public void setCode(int code) {
         this.code = code;
@@ -21,19 +24,42 @@ public class HttpResponse implements Serializable {
         return code;
     }
 
+    public class Body {
+        private String string;
+        private InputStream inputStream;
+
+        public void setString(String string) {
+            this.string = string;
+        }
+
+        public String string() {
+            check(ResponseType.String);
+            return string;
+        }
+
+        public void setInputStream(InputStream inputStream) {
+            check(ResponseType.InputStream);
+            this.inputStream = inputStream;
+        }
+
+        public InputStream getInputStream() {
+            return inputStream;
+        }
+    }
+
+    public Body body() {
+        return mBody;
+    }
+
     public void setContentLength(long contentLength) {
         this.contentLength = contentLength;
     }
 
-    public void setInputStream(InputStream inputStream) {
-        check(ResponseType.InputStream);
-        this.inputStream = inputStream;
-    }
 
     private void check(ResponseType requstType) {
         if (requstType != type) {
             StringBuffer stringBuffer = new StringBuffer();
-            stringBuffer.append("response type mismatch,you need type is ").append(requstType)
+            stringBuffer.append("Response type mismatch,you need type is ").append(requstType)
                     .append(" ，but your configuration is ").append(type).append(" ,so you should config responseType like this:");
             switch (requstType) {
                 case String:
@@ -51,20 +77,8 @@ public class HttpResponse implements Serializable {
         return contentLength;
     }
 
-    public InputStream getInputStream() {
-        return inputStream;
-    }
-
     public void setResponseType(ResponseType type) {
         this.type = type;
     }
 
-    public void setString(String string) {
-        this.string = string;
-    }
-
-    public String string() {
-        check(ResponseType.String);
-        return string;
-    }
 }

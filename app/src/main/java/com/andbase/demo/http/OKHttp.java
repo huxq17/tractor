@@ -30,7 +30,6 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import okhttp3.Call;
-import okhttp3.Callback;
 import okhttp3.Headers;
 import okhttp3.MediaType;
 import okhttp3.MultipartBody;
@@ -263,18 +262,17 @@ public class OKHttp implements HttpBase {
                             } catch (Exception e) {
                                 e.printStackTrace();
                             }
-                            httpResponse.setString(string);
-                            LogUtils.i("okresult: " + string);
+                            httpResponse.body().setString(string);
+                            LogUtils.d("okresult: " + string);
                             break;
                         case InputStream:
-                            httpResponse.setInputStream(response.body().byteStream());
+                            httpResponse.body().setInputStream(response.body().byteStream());
                             break;
                     }
                 } else {
                     closeResponseBody(response);
                 }
                 httpResponse.setCode(response.code());
-                httpResponse.setString(string);
                 httpResponse.setContentLength(response.body().contentLength());
             } catch (Exception e) {
                 e.printStackTrace();
@@ -326,11 +324,11 @@ public class OKHttp implements HttpBase {
                             } catch (Exception e) {
                                 e.printStackTrace();
                             }
-                            httpResponse.setString(string);
+                            httpResponse.body().setString(string);
                             LogUtils.d("okresult: " + string + ";contentLength=" + response.body().contentLength());
                             break;
                         case InputStream:
-                            httpResponse.setInputStream(response.body().byteStream());
+                            httpResponse.body().setInputStream(response.body().byteStream());
                             break;
                     }
                 } else {
@@ -347,52 +345,6 @@ public class OKHttp implements HttpBase {
                     notifyFail(e);
                 }
                 e.printStackTrace();
-            }
-        }
-
-        private void enqueue() {
-            mCall.enqueue(new Callback() {
-                @Override
-                public void onFailure(Request request, IOException e) {
-                    synchronized (NetWorkTask.this) {
-                        NetWorkTask.this.notifyFail(e);
-                        NetWorkTask.this.notify();
-                    }
-                }
-
-                @Override
-                public void onResponse(Response response) throws IOException {
-                    synchronized (NetWorkTask.this) {
-                        HttpResponse httpResponse = new HttpResponse();
-                        String string = null;
-                        switch (mType) {
-                            case String:
-                                try {
-                                    string = response.body().string();
-                                } catch (IOException e) {
-                                } catch (Exception e) {
-                                    e.printStackTrace();
-                                }
-                                httpResponse.setString(string);
-                                LogUtils.d("okresult: " + string);
-                                break;
-                            case InputStream:
-                                httpResponse.setInputStream(response.body().byteStream());
-                                break;
-                        }
-                        httpResponse.setString(string);
-                        httpResponse.setContentLength(response.body().contentLength());
-                        NetWorkTask.this.notifySuccess(httpResponse);
-                        NetWorkTask.this.notify();
-                    }
-                }
-            });
-            synchronized (this) {
-                try {
-                    this.wait();
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
             }
         }
 

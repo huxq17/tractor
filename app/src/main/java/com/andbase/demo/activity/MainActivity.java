@@ -176,7 +176,7 @@ public class MainActivity extends BaseActivity {
                     public void onSuccess(Object result) {
                         super.onSuccess(result);
                         HttpResponse response = (HttpResponse) result;
-                        toast(response.string());
+                        toast(response.body().string());
                     }
 
                     @Override
@@ -198,7 +198,7 @@ public class MainActivity extends BaseActivity {
                     public void onSuccess(Object result) {
                         super.onSuccess(result);
                         HttpResponse response = (HttpResponse) result;
-                        toast(response.string());
+                        toast(response.body().string());
                     }
 
                     @Override
@@ -239,7 +239,7 @@ public class MainActivity extends BaseActivity {
                     public void onSuccess(Object result) {
                         super.onSuccess(result);
                         HttpResponse response = (HttpResponse) result;
-                        setMessage(response.string());
+                        setMessage(response.body().string());
                     }
 
                     @Override

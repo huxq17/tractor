@@ -102,6 +102,7 @@ public class HttpSender {
 
     public HttpResponse getSync(String url, Object... tag) {
         HttpRequest.Builder builder = new HttpRequest.Builder();
+        //可以设置不返回body，适用于只获取文件大小的情况
         builder.url(url).synchron().noBody();
         HttpResponse response = mHttpBase.get(builder.build(), null, tag);
         return response;

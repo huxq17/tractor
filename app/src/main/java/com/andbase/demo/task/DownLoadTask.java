@@ -218,7 +218,7 @@ public class DownLoadTask extends Task {
                 HttpResponse downloadResponse = HttpSender.instance().getInputStreamSync(url, header, null, null, tag);
                 InputStream inStream = null;
                 if (downloadResponse != null) {
-                    inStream = downloadResponse.getInputStream();
+                    inStream = downloadResponse.body().getInputStream();
                 } else {
                     notifyDownloadFailed(null);
                     return;
