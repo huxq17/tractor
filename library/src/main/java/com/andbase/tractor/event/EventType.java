@@ -3,14 +3,15 @@ package com.andbase.tractor.event;
 import com.andbase.tractor.utils.LogUtils;
 
 /**
- * Created by 2144 on 2016/11/8.
+ * Created by huxq17 on 2016/11/8.
  */
 
 public class EventType {
     public int type = -1;
     public Class<?> spareType;
 
-    public EventType() {
+    public EventType(Class<?> spareType) {
+        this.spareType = spareType;
     }
 
     public EventType(int type) {

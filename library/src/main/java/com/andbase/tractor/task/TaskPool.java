@@ -74,8 +74,9 @@ public class TaskPool {
         }
     }
 
-    public void shutdown(){
+    public void shutdown() {
         mThreadPool.shutdown();
+        mInternalService.shutdown();
     }
 
     public List<Task> findTaskWithTag(Object tag) {
