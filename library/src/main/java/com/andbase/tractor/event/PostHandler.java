@@ -7,7 +7,7 @@ import android.os.Message;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
- * Created by 2144 on 2016/11/10.
+ * Created by huxq17 on 2016/11/10.
  */
 
 public class PostHandler extends Handler {
@@ -37,6 +37,5 @@ public class PostHandler extends Handler {
             }
             pendingPosts.clear();
         }
-
     }
 }

@@ -33,7 +33,11 @@ public class EventType {
     public boolean equals(Object o) {
         if (o instanceof EventType) {
             EventType eventType = (EventType) o;
-            if (type != -1 && eventType.type == type || spareType != null && eventType.spareType == spareType) {
+            if (type != -1) {
+                if (eventType.type == type) {
+                    return true;
+                }
+            } else if (spareType != null && eventType.spareType == spareType) {
                 return true;
             }
         }

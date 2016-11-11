@@ -8,6 +8,7 @@ public abstract class Subscriber<T> {
     protected EventType eventType;
     protected boolean mainThread = true;
     protected boolean sticky = false;
+    protected boolean isRegistered = false;
 
     public Subscriber() {
     }

@@ -7,6 +7,10 @@ import com.andbase.tractor.utils.LogUtils;
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -46,17 +50,41 @@ public class EventTractor {
                 mSubscriptions.put(type, subscribers);
             }
             subscribers.add(subscriber);
+            subscriber.isRegistered = true;
         }
     }
 
     public void unregister(Subscriber subscriber) {
-        final EventType type = findEventType(subscriber);
-        mSubscriptions.remove(type);
+        if (subscriber != null) {
+            final EventType type = subscriber.eventType;
+            unregisterSubscriberByType(type, subscriber);
+        }
+    }
+
+    public void unregister(int type) {
+        if (type != mInvalidType) {
+            final EventType eventType = new EventType(type);
+            CopyOnWriteArrayList<Subscriber> subscribers = mSubscriptions.remove(eventType);
+            if (subscribers == null) return;
+            for (Subscriber subscriber : subscribers) {
+                subscriber.isRegistered = false;
+            }
+        }
+    }
+
+    private synchronized void unregisterSubscriberByType(EventType type, Subscriber subscriber) {
+        CopyOnWriteArrayList<Subscriber> subscribers = mSubscriptions.get(type);
+        if (subscribers != null && subscribers.size() > 0) {
+            subscribers.remove(subscriber);
+            subscriber.isRegistered = false;
+        }
     }
 
     public synchronized boolean isRegistered(Subscriber subscriber) {
-        final EventType type = findEventType(subscriber);
-        return mSubscriptions.containsKey(type);
+        if (subscriber != null) {
+            return subscriber.isRegistered;
+        }
+        return false;
     }
 
     public synchronized boolean isRegistered(int eventType) {
@@ -67,7 +95,8 @@ public class EventTractor {
     public void post(int type, Object event) {
         CopyOnWriteArrayList<Subscriber> subscribers = null;
         if (type != mInvalidType) {
-            subscribers = mSubscriptions.get(type);
+            EventType eventType = new EventType(type);
+            subscribers = mSubscriptions.get(eventType);
         } else {
             Class<?> eventType = event.getClass();
             subscribers = mSubscriptions.get(new EventType(eventType));
@@ -79,7 +108,17 @@ public class EventTractor {
         }
     }
 
+    private void checkEvent(Subscriber subscriber, Object event) {
+        Class subscriberType = subscriber.eventType.spareType;
+        Class postEventType = event.getClass();
+        if (!subscriberType.equals(postEventType)) {
+            throw new EventException("Subscriber's onEvent method's parameter is " + subscriberType.getCanonicalName() +
+                    ",but event is " + postEventType.getCanonicalName() + ",please keep they consistent.");
+        }
+    }
+
     private void postSingleEvent(Subscriber subscriber, Object event) {
+        checkEvent(subscriber, event);
         PendingPost pendingPost = new PendingPost(subscriber, event);
         boolean isMainThread = Looper.getMainLooper() == Looper.myLooper();
         if (subscriber.mainThread) {
@@ -105,37 +144,50 @@ public class EventTractor {
 
     private EventType findEventType(Subscriber subscriber) {
         EventType eventType = subscriber.eventType;
-        if (eventType == null) {
-
-            Class<?> subscriberClass = subscriber.getClass();
-            try {
-                Method subscriberMethod = subscriberClass.getMethod(SUBSCRIBER_METHOD, Object.class);
-
-                Subscribe subscribeAnnotation = subscriberMethod.getAnnotation(Subscribe.class);
-                if (subscribeAnnotation != null) {
-                    subscriber.mainThread = subscribeAnnotation.mainThread();
-                    subscriber.sticky = subscribeAnnotation.sticky();
-                }
-
-                Type genType = subscriberClass.getGenericSuperclass();
-                Type[] params = ((ParameterizedType) genType).getActualTypeArguments();
-
-//                String methodName = subscriberMethod.getName();
-                if (params.length == 1) {
-                    Class clazz = (Class) params[0];
-                    eventType = new EventType(clazz);
-                } else {
-                    throw new EventException("class " + subscriberClass.getName() +
-                            "must have exactly 1 parameter but has " + params.length);
-                }
-            } catch (NoSuchMethodException e) {
-                throw new EventException(e);
+        Class<?> subscriberClass = subscriber.getClass();
+        Type genType = subscriberClass.getGenericSuperclass();
+        Type[] params = ((ParameterizedType) genType).getActualTypeArguments();
+        try {
+            Method subscriberMethod = subscriberClass.getMethod(SUBSCRIBER_METHOD, Object.class);
+            Subscribe subscribeAnnotation = subscriberMethod.getAnnotation(Subscribe.class);
+            if (subscribeAnnotation != null) {
+                subscriber.mainThread = subscribeAnnotation.mainThread();
+                subscriber.sticky = subscribeAnnotation.sticky();
             }
+//                String methodName = subscriberMethod.getName();
+            if (params.length == 1) {
+                Class clazz = (Class) params[0];
+                if (eventType == null) {
+                    eventType = new EventType(clazz);
+                }
+            } else {
+                throw new EventException("class " + subscriberClass.getName() +
+                        "must have exactly 1 parameter but has " + params.length);
+            }
+        } catch (NoSuchMethodException e) {
+            throw new EventException(e);
+        }
+        eventType.spareType = (Class) params[0];
+        if (subscriber.eventType == null) {
+            subscriber.eventType = eventType;
         }
         return eventType;
     }
 
-    public void clear() {
-        mSubscriptions.clear();
+    public synchronized void clear() {
+//        mSubscriptions.clear();
+        Set<Map.Entry<EventType, CopyOnWriteArrayList<Subscriber>>> entrySet = mSubscriptions.entrySet();
+        List<EventType> eventTypes = new ArrayList<>();
+        for (Map.Entry<EventType, CopyOnWriteArrayList<Subscriber>> entry : entrySet) {
+            eventTypes.add(entry.getKey());
+        }
+        for (EventType eventType : eventTypes) {
+            CopyOnWriteArrayList<Subscriber> subscribers = mSubscriptions.remove(eventType);
+            if (subscribers == null) return;
+            for (Subscriber subscriber : subscribers) {
+                subscriber.isRegistered = false;
+            }
+        }
+        eventTypes.clear();
     }
 }

@@ -14,6 +14,7 @@ import com.andbase.tractor.event.Subscribe;
 import com.andbase.tractor.event.Subscriber;
 import com.andbase.tractor.task.Task;
 import com.andbase.tractor.task.TaskPool;
+import com.andbase.tractor.utils.LogUtils;
 import com.andview.refreshview.XRefreshView;
 
 import java.util.List;
@@ -26,6 +27,22 @@ public class SecondActivity extends BaseActivity {
     private RecyclerView mRecyclerView;
     private DownLoadListAdapter adapter;
     private List<GamesBean> list;
+    private Subscriber subscriber1 = new Subscriber<String>() {
+        @Override
+        @Subscribe(mainThread = true, sticky = false)
+        public void onEvent(String event) {
+            toast("subscriber1 event = " + event);
+            LogUtils.d("subscriber1 event = " + event);
+        }
+    };
+    private Subscriber subscriber2 = new Subscriber<String>(1) {
+        @Override
+        @Subscribe(mainThread = true, sticky = false)
+        public void onEvent(String event) {
+            toast("subscriber2 event = " + event);
+            LogUtils.d("subscriber2 event = " + event);
+        }
+    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -44,24 +61,24 @@ public class SecondActivity extends BaseActivity {
                 }, 2000);
             }
         });
-        Tractor.register(new Subscriber<String>() {
-            @Override
-            @Subscribe(mainThread = true, sticky = false)
-            public void onEvent(String event) {
-                toast("event=" + event);
-            }
-        });
+        Tractor.register(subscriber1);
+        Tractor.register(subscriber2);
+        post();
+    }
+
+    private void post() {
         Tractor.post("来自主线程");
+        Tractor.post(1, "来自主线程2");
         TaskPool.getInstance().execute(new Task() {
             @Override
             public void onRun() {
                 //在非主线程发消息
                 Tractor.post("来自非主线程");
+                Tractor.post(1, "来自非主线程2");
             }
 
             @Override
             public void cancelTask() {
-
             }
         });
     }
@@ -69,6 +86,9 @@ public class SecondActivity extends BaseActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        Tractor.unregister(subscriber1);
+        Tractor.unregister(1);
+        post();
     }
 
     private void initView() {
