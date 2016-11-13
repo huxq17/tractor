@@ -38,7 +38,7 @@ public class Tractor {
     }
 
     /**
-     * post the given event with given type and it will deliver to Subscribers that are interested in this.
+     * post the given value with given type and it will deliver to Subscribers that are interested in this.
      * @param type
      * @param event
      */
@@ -47,7 +47,7 @@ public class Tractor {
     }
 
     /**
-     * post the given event and it will deliver to Subscribers that are interested in this.
+     * post the given value and it will deliver to Subscribers that are interested in this.
      * @param event
      */
     public static void post(Object event) {

@@ -31,16 +31,16 @@ public class SecondActivity extends BaseActivity {
         @Override
         @Subscribe(mainThread = true, sticky = false)
         public void onEvent(String event) {
-            toast("subscriber1 event = " + event);
-            LogUtils.d("subscriber1 event = " + event);
+            toast("subscriber1 value = " + event);
+            LogUtils.d("subscriber1 value = " + event);
         }
     };
     private Subscriber subscriber2 = new Subscriber<String>(1) {
         @Override
         @Subscribe(mainThread = true, sticky = false)
         public void onEvent(String event) {
-            toast("subscriber2 event = " + event);
-            LogUtils.d("subscriber2 event = " + event);
+            toast("subscriber2 value = " + event);
+            LogUtils.d("subscriber2 value = " + event);
         }
     };
 

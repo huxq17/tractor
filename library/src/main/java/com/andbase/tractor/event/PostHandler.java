@@ -33,7 +33,7 @@ public class PostHandler extends Handler {
         super.handleMessage(msg);
         synchronized (this) {
             for (PendingPost pendingPost : pendingPosts) {
-                tractor.deliverSubsriber(pendingPost);
+                tractor.deliverToSubsriber(pendingPost);
             }
             pendingPosts.clear();
         }

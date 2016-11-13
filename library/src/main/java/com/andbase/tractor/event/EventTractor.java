@@ -23,7 +23,7 @@ public class EventTractor {
     private final PostHandler mainThreadHandler;
     private static final String SUBSCRIBER_METHOD = "onEvent";
     private static final ConcurrentHashMap<EventType, CopyOnWriteArrayList<Subscriber>> mSubscriptions = new ConcurrentHashMap<>();
-    private volatile CopyOnWriteArrayList<Subscriber> mSubscribers = new CopyOnWriteArrayList<>();
+    private volatile CopyOnWriteArrayList<Event> mStickyEvents = new CopyOnWriteArrayList<>();
 
     private static class InstanceHolder {
         private static final EventTractor instance = new EventTractor();
@@ -41,7 +41,7 @@ public class EventTractor {
         if (subscriber != null) {
             final EventType type = findEventType(subscriber);
             if (type == null) {
-                LogUtils.e("can not find event type,register fail!");
+                LogUtils.e("can not find value type,register fail!");
                 return;
             }
             CopyOnWriteArrayList<Subscriber> subscribers = mSubscriptions.get(type);
@@ -92,13 +92,50 @@ public class EventTractor {
         return mSubscriptions.containsKey(type);
     }
 
+    private void checkEvent(Subscriber subscriber, Object event) {
+        Class subscriberType = subscriber.eventType.spareType;
+        Class postEventType = event.getClass();
+        if (!subscriberType.equals(postEventType)) {
+            throw new EventException("Subscriber's onEvent method's parameter is " + subscriberType.getCanonicalName() +
+                    ",but value is " + postEventType.getCanonicalName() + ",please keep they consistent.");
+        }
+    }
+
+    private void postSingleEvent(Subscriber subscriber, Event event) {
+        checkEvent(subscriber, event);
+        PendingPost pendingPost = new PendingPost(subscriber, event);
+        boolean isMainThread = Looper.getMainLooper() == Looper.myLooper();
+        if (subscriber.mainThread) {
+            if (!isMainThread) {
+                mainThreadHandler.postToMainThread(pendingPost);
+            } else {
+                deliverToSubsriber(pendingPost);
+            }
+        } else {
+            deliverToSubsriber(pendingPost);
+        }
+    }
+
+    protected void deliverToSubsriber(PendingPost pendingPost) {
+        Object event = pendingPost.event.value;
+        boolean sticky = pendingPost.event.sticky;
+        Subscriber subscriber = pendingPost.subscriber;
+        subscriber.onEvent(event);
+        if (sticky) {
+            mStickyEvents.remove(pendingPost.event);
+        }
+    }
+
     public void post(int type, Object event) {
+        post(type, new Event(event));
+    }
+
+    private void post(int type, Event event) {
         CopyOnWriteArrayList<Subscriber> subscribers = null;
         if (type != mInvalidType) {
-            EventType eventType = new EventType(type);
-            subscribers = mSubscriptions.get(eventType);
+            subscribers = mSubscriptions.get(new EventType(type));
         } else {
-            Class<?> eventType = event.getClass();
+            Class<?> eventType = event.value.getClass();
             subscribers = mSubscriptions.get(new EventType(eventType));
         }
         if (subscribers != null) {
@@ -108,39 +145,20 @@ public class EventTractor {
         }
     }
 
-    private void checkEvent(Subscriber subscriber, Object event) {
-        Class subscriberType = subscriber.eventType.spareType;
-        Class postEventType = event.getClass();
-        if (!subscriberType.equals(postEventType)) {
-            throw new EventException("Subscriber's onEvent method's parameter is " + subscriberType.getCanonicalName() +
-                    ",but event is " + postEventType.getCanonicalName() + ",please keep they consistent.");
-        }
-    }
-
-    private void postSingleEvent(Subscriber subscriber, Object event) {
-        checkEvent(subscriber, event);
-        PendingPost pendingPost = new PendingPost(subscriber, event);
-        boolean isMainThread = Looper.getMainLooper() == Looper.myLooper();
-        if (subscriber.mainThread) {
-            if (!isMainThread) {
-                mainThreadHandler.postToMainThread(pendingPost);
-            } else {
-                deliverSubsriber(pendingPost);
-            }
-        } else {
-            deliverSubsriber(pendingPost);
-        }
-    }
-
-    public void deliverSubsriber(PendingPost pendingPost) {
-        Object event = pendingPost.event;
-        Subscriber subscriber = pendingPost.subscriber;
-        subscriber.onEvent(event);
-    }
-
     public void post(Object event) {
         post(mInvalidType, event);
     }
+
+    public void postStick(int type, Object stickyEvent) {
+        Event event = new Event(stickyEvent, true);
+        mStickyEvents.add(event);
+        post(type, event);
+    }
+
+    public void postStick(Object stickyEvent) {
+        postStick(mInvalidType, stickyEvent);
+    }
+
 
     private EventType findEventType(Subscriber subscriber) {
         EventType eventType = subscriber.eventType;
@@ -175,7 +193,7 @@ public class EventTractor {
     }
 
     public synchronized void clear() {
-//        mSubscriptions.clear();
+        mSubscriptions.clear();
         Set<Map.Entry<EventType, CopyOnWriteArrayList<Subscriber>>> entrySet = mSubscriptions.entrySet();
         List<EventType> eventTypes = new ArrayList<>();
         for (Map.Entry<EventType, CopyOnWriteArrayList<Subscriber>> entry : entrySet) {
