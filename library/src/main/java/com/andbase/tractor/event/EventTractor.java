@@ -7,10 +7,7 @@ import com.andbase.tractor.utils.LogUtils;
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.Collection;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -22,8 +19,8 @@ public class EventTractor {
     private static final int mInvalidType = -1;
     private final PostHandler mainThreadHandler;
     private static final String SUBSCRIBER_METHOD = "onEvent";
-    private static final ConcurrentHashMap<EventType, CopyOnWriteArrayList<Subscriber>> mSubscriptions = new ConcurrentHashMap<>();
-    private volatile CopyOnWriteArrayList<Event> mStickyEvents = new CopyOnWriteArrayList<>();
+    private final ConcurrentHashMap<EventType, CopyOnWriteArrayList<Subscriber>> mSubscriptions = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<EventType, Object> mStickyEvents = new ConcurrentHashMap<>();
 
     private static class InstanceHolder {
         private static final EventTractor instance = new EventTractor();
@@ -41,16 +38,25 @@ public class EventTractor {
         if (subscriber != null) {
             final EventType type = findEventType(subscriber);
             if (type == null) {
-                LogUtils.e("can not find value type,register fail!");
+                LogUtils.e("Can not find value type,register fail!");
                 return;
             }
-            CopyOnWriteArrayList<Subscriber> subscribers = mSubscriptions.get(type);
-            if (subscribers == null) {
-                subscribers = new CopyOnWriteArrayList<>();
-                mSubscriptions.put(type, subscribers);
+            synchronized (mSubscriptions) {
+                CopyOnWriteArrayList<Subscriber> subscribers = mSubscriptions.get(type);
+                if (subscribers == null) {
+                    subscribers = new CopyOnWriteArrayList<>();
+                    mSubscriptions.put(type, subscribers);
+                }
+                subscribers.add(subscriber);
             }
-            subscribers.add(subscriber);
-            subscriber.isRegistered = true;
+            //Post sticky event.
+            Object stickyEvent = null;
+            synchronized (mStickyEvents) {
+                stickyEvent = mStickyEvents.get(type);
+            }
+            if (stickyEvent != null) {
+                postSingleEvent(subscriber, stickyEvent);
+            }
         }
     }
 
@@ -64,32 +70,33 @@ public class EventTractor {
     public void unregister(int type) {
         if (type != mInvalidType) {
             final EventType eventType = new EventType(type);
-            CopyOnWriteArrayList<Subscriber> subscribers = mSubscriptions.remove(eventType);
-            if (subscribers == null) return;
-            for (Subscriber subscriber : subscribers) {
-                subscriber.isRegistered = false;
+            mSubscriptions.remove(eventType);
+        }
+    }
+
+    private void unregisterSubscriberByType(EventType type, Subscriber subscriber) {
+        synchronized (mSubscriptions) {
+            CopyOnWriteArrayList<Subscriber> subscribers = mSubscriptions.get(type);
+            if (subscribers != null && subscribers.size() > 0) {
+                subscribers.remove(subscriber);
             }
         }
     }
 
-    private synchronized void unregisterSubscriberByType(EventType type, Subscriber subscriber) {
-        CopyOnWriteArrayList<Subscriber> subscribers = mSubscriptions.get(type);
-        if (subscribers != null && subscribers.size() > 0) {
-            subscribers.remove(subscriber);
-            subscriber.isRegistered = false;
-        }
-    }
-
-    public synchronized boolean isRegistered(Subscriber subscriber) {
+    public boolean isRegistered(Subscriber subscriber) {
         if (subscriber != null) {
-            return subscriber.isRegistered;
+            synchronized (mSubscriptions) {
+                return mSubscriptions.containsKey(subscriber.eventType);
+            }
         }
         return false;
     }
 
-    public synchronized boolean isRegistered(int eventType) {
-        final EventType type = new EventType(eventType);
-        return mSubscriptions.containsKey(type);
+    public boolean isRegistered(int eventType) {
+        synchronized (mSubscriptions) {
+            final EventType type = new EventType(eventType);
+            return mSubscriptions.containsKey(type);
+        }
     }
 
     private void checkEvent(Subscriber subscriber, Object event) {
@@ -101,7 +108,7 @@ public class EventTractor {
         }
     }
 
-    private void postSingleEvent(Subscriber subscriber, Event event) {
+    private void postSingleEvent(Subscriber subscriber, Object event) {
         checkEvent(subscriber, event);
         PendingPost pendingPost = new PendingPost(subscriber, event);
         boolean isMainThread = Looper.getMainLooper() == Looper.myLooper();
@@ -117,25 +124,17 @@ public class EventTractor {
     }
 
     protected void deliverToSubsriber(PendingPost pendingPost) {
-        Object event = pendingPost.event.value;
-        boolean sticky = pendingPost.event.sticky;
+        Object event = pendingPost.event;
         Subscriber subscriber = pendingPost.subscriber;
         subscriber.onEvent(event);
-        if (sticky) {
-            mStickyEvents.remove(pendingPost.event);
-        }
     }
 
     public void post(int type, Object event) {
-        post(type, new Event(event));
-    }
-
-    private void post(int type, Event event) {
         CopyOnWriteArrayList<Subscriber> subscribers = null;
         if (type != mInvalidType) {
             subscribers = mSubscriptions.get(new EventType(type));
         } else {
-            Class<?> eventType = event.value.getClass();
+            Class<?> eventType = event.getClass();
             subscribers = mSubscriptions.get(new EventType(eventType));
         }
         if (subscribers != null) {
@@ -149,10 +148,42 @@ public class EventTractor {
         post(mInvalidType, event);
     }
 
-    public void postStick(int type, Object stickyEvent) {
-        Event event = new Event(stickyEvent, true);
-        mStickyEvents.add(event);
-        post(type, event);
+    public void postStick(int type, Object event) {
+        synchronized (mStickyEvents) {
+            EventType eventType = null;
+            if (type != mInvalidType) {
+                eventType = new EventType(type);
+            } else {
+                eventType = new EventType(event.getClass());
+            }
+            mStickyEvents.put(eventType, event);
+            post(type, event);
+        }
+    }
+
+    public boolean removeStickyEvent(int type) {
+        if (type != mInvalidType) {
+            EventType eventType = new EventType(type);
+            synchronized (mStickyEvents) {
+                return mStickyEvents.remove(eventType) != null;
+            }
+        }
+        return false;
+    }
+
+    public boolean removeStickyEvent(Object stickyEvent) {
+        if (stickyEvent != null) {
+            synchronized (mStickyEvents) {
+                Collection<Object> values = mStickyEvents.values();
+                for (Object object : values) {
+                    if (object.equals(stickyEvent)) {
+                        values.remove(stickyEvent);
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
     }
 
     public void postStick(Object stickyEvent) {
@@ -177,6 +208,7 @@ public class EventTractor {
                 Class clazz = (Class) params[0];
                 if (eventType == null) {
                     eventType = new EventType(clazz);
+                    subscriber.eventType = eventType;
                 }
             } else {
                 throw new EventException("class " + subscriberClass.getName() +
@@ -186,26 +218,15 @@ public class EventTractor {
             throw new EventException(e);
         }
         eventType.spareType = (Class) params[0];
-        if (subscriber.eventType == null) {
-            subscriber.eventType = eventType;
-        }
         return eventType;
     }
 
-    public synchronized void clear() {
-        mSubscriptions.clear();
-        Set<Map.Entry<EventType, CopyOnWriteArrayList<Subscriber>>> entrySet = mSubscriptions.entrySet();
-        List<EventType> eventTypes = new ArrayList<>();
-        for (Map.Entry<EventType, CopyOnWriteArrayList<Subscriber>> entry : entrySet) {
-            eventTypes.add(entry.getKey());
+    public void clear() {
+        synchronized (mSubscriptions) {
+            mSubscriptions.clear();
         }
-        for (EventType eventType : eventTypes) {
-            CopyOnWriteArrayList<Subscriber> subscribers = mSubscriptions.remove(eventType);
-            if (subscribers == null) return;
-            for (Subscriber subscriber : subscribers) {
-                subscriber.isRegistered = false;
-            }
+        synchronized (mStickyEvents) {
+            mStickyEvents.clear();
         }
-        eventTypes.clear();
     }
 }

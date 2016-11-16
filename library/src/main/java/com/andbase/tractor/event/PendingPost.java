@@ -6,9 +6,9 @@ package com.andbase.tractor.event;
 
 public class PendingPost {
     public Subscriber subscriber;
-    public Event event;
+    public Object event;
 
-    public PendingPost(Subscriber subscriber, Event event) {
+    public PendingPost(Subscriber subscriber, Object event) {
         this.subscriber = subscriber;
         this.event = event;
     }

@@ -18,6 +18,7 @@ import com.andbase.demo.http.response.HttpResponse;
 import com.andbase.demo.utils.DataCleanManager;
 import com.andbase.demo.utils.HttpSender;
 import com.andbase.demo.utils.Utils;
+import com.andbase.tractor.Tractor;
 import com.andbase.tractor.listener.LoadListener;
 import com.andbase.tractor.listener.impl.LoadListenerImpl;
 import com.andbase.tractor.task.Task;
@@ -47,6 +48,7 @@ public class MainActivity extends BaseActivity {
         verifyStoragePermissions(this);
         sdcardPath = Util.getSdcardPath();
         OKHttp.init(getApplicationContext());
+        Tractor.postSticky(1245,1234);
     }
 
     // Storage Permissions
