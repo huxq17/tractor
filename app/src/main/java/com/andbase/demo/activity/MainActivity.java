@@ -7,6 +7,7 @@ import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.SystemClock;
 import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.LocalBroadcastManager;
 import android.text.TextUtils;
 import android.view.View;
 
@@ -49,6 +50,7 @@ public class MainActivity extends BaseActivity {
         sdcardPath = Util.getSdcardPath();
         OKHttp.init(getApplicationContext());
         Tractor.postSticky(1245,1234);
+        LocalBroadcastManager la;
     }
 
     // Storage Permissions

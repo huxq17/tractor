@@ -112,6 +112,7 @@ public class EventTractor {
         checkEvent(subscriber, event);
         PendingPost pendingPost = new PendingPost(subscriber, event);
         boolean isMainThread = Looper.getMainLooper() == Looper.myLooper();
+        int pid = android.os.Process.myPid();
         if (subscriber.mainThread) {
             if (!isMainThread) {
                 mainThreadHandler.postToMainThread(pendingPost);
