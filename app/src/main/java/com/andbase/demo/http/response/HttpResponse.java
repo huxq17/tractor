@@ -1,12 +1,11 @@
 package com.andbase.demo.http.response;
 
 import java.io.InputStream;
-import java.io.Serializable;
 
 /**
  * Created by huxq17 on 2015/11/28.
  */
-public class HttpResponse implements Serializable {
+public class HttpResponse {
     private long contentLength;
     private ResponseType type;
     private int code;
@@ -81,4 +80,11 @@ public class HttpResponse implements Serializable {
         this.type = type;
     }
 
+    public static String getString(Object result) {
+        if (result instanceof HttpResponse) {
+            HttpResponse httpResponse = (HttpResponse) result;
+            return httpResponse.body().string();
+        }
+        return null;
+    }
 }

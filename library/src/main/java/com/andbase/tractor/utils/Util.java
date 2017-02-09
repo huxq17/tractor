@@ -1,6 +1,11 @@
 package com.andbase.tractor.utils;
 
+import android.app.ActivityManager;
+import android.content.Context;
 import android.os.Environment;
+import android.os.Process;
+
+import com.google.gson.Gson;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -12,8 +17,56 @@ import java.util.UUID;
  * Created by huxq17 on 2015/11/20.
  */
 public class Util {
+    private static final Gson GSON = new Gson();
+
+    public static String encode(Object object) {
+        if (object == null) {
+            return null;
+        } else {
+            try {
+                return GSON.toJson(object);
+            } catch (RuntimeException e) {
+                e.printStackTrace();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+        return null;
+    }
+
+    public static <T> T decode(String data, Class<T> clazz) {
+        try {
+            return GSON.fromJson(data, clazz);
+        } catch (RuntimeException e) {
+            e.printStackTrace();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+
+    }
+
+    public static boolean isMainProcess(Context context) {
+        LogUtils.e("processInfo.processName=" + getCurrentProcessName(context) + "; context.getPackageName()=" + context.getPackageName() + ";pid=" + android.os.Process.myPid());
+        return context.getPackageName().equals(getCurrentProcessName(context));
+    }
+
+    public static String getCurrentProcessName(Context context) {
+        ActivityManager activityManager = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
+        if (activityManager == null) {
+            return null;
+        }
+        for (ActivityManager.RunningAppProcessInfo processInfo : activityManager.getRunningAppProcesses()) {
+            if (processInfo.pid == Process.myPid()) {
+                return processInfo.processName;
+            }
+        }
+        return null;
+    }
+
     /**
      * 获取sd卡路径
+     *
      * @return
      */
     public static String getSdcardPath() {

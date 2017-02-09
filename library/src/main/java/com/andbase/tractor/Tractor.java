@@ -1,6 +1,8 @@
 package com.andbase.tractor;
 
-import com.andbase.tractor.event.EventTractor;
+import android.content.Context;
+
+import com.andbase.tractor.event.Router;
 import com.andbase.tractor.event.Subscriber;
 
 /**
@@ -8,6 +10,12 @@ import com.andbase.tractor.event.Subscriber;
  */
 
 public class Tractor {
+    private static final Router mRouter = new Router();
+
+    public static void init(Context context) {
+        mRouter.init(context);
+    }
+
     /**
      * Registers the given subscriber to receive events. Subscribers must call {@link #unregister(Subscriber)}or {@link #unregister(int)} once they
      * are no longer interested in receiving events.
@@ -15,7 +23,7 @@ public class Tractor {
      * @param subscriber
      */
     public static void register(Subscriber subscriber) {
-        EventTractor.instance().register(subscriber);
+        mRouter.register(subscriber);
     }
 
     /**
@@ -24,7 +32,7 @@ public class Tractor {
      * @param subscriber
      */
     public static void unregister(Subscriber subscriber) {
-        EventTractor.instance().unregister(subscriber);
+        mRouter.unregister(subscriber);
     }
 
     /**
@@ -33,7 +41,7 @@ public class Tractor {
      * @param eventType
      */
     public static void unregister(int eventType) {
-        EventTractor.instance().unregister(eventType);
+        mRouter.unregister(eventType);
     }
 
     /**
@@ -43,7 +51,7 @@ public class Tractor {
      * @param event
      */
     public static void post(int eventType, Object event) {
-        EventTractor.instance().post(eventType, event);
+        mRouter.post(eventType, event);
     }
 
     /**
@@ -52,34 +60,34 @@ public class Tractor {
      * @param event
      */
     public static void post(Object event) {
-        EventTractor.instance().post(event);
+        mRouter.post(event);
     }
 
     public static void postSticky(Object stickyEvent) {
-        EventTractor.instance().postStick(stickyEvent);
+        mRouter.postSticky(stickyEvent);
     }
 
     public static void postSticky(int type, Object stickyEvent) {
-        EventTractor.instance().postStick(type, stickyEvent);
+        mRouter.postSticky(type, stickyEvent);
     }
 
     public static boolean removeStickyEvent(int type) {
-        return EventTractor.instance().removeStickyEvent(type);
+        return mRouter.removeStickyEvent(type);
     }
 
     public static boolean removeStickyEvent(Object stickyEvent) {
-        return EventTractor.instance().removeStickyEvent(stickyEvent);
+        return mRouter.removeStickyEvent(stickyEvent);
     }
 
-    public boolean isRegistered(Subscriber subscriber) {
-        return EventTractor.instance().isRegistered(subscriber);
+    public static boolean isRegistered(Subscriber subscriber) {
+        return mRouter.isRegistered(subscriber);
     }
 
-    public boolean isRegistered(int eventType) {
-        return EventTractor.instance().isRegistered(eventType);
+    public static boolean isRegistered(int eventType) {
+        return mRouter.isRegistered(eventType);
     }
 
     public static void clear() {
-        EventTractor.instance().clear();
+        mRouter.clear();
     }
 }

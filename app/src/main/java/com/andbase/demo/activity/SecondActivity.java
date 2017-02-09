@@ -47,7 +47,6 @@ public class SecondActivity extends BaseActivity {
     @Override
     public void onUserInteraction() {
         super.onUserInteraction();
-
         LogUtils.e("Tractor.removeStickyEvent(new Integer(1234)) result="+Tractor.removeStickyEvent(new Integer(1234)));
     }
 

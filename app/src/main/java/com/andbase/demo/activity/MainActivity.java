@@ -7,7 +7,6 @@ import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.SystemClock;
 import android.support.v4.app.ActivityCompat;
-import android.support.v4.content.LocalBroadcastManager;
 import android.text.TextUtils;
 import android.view.View;
 
@@ -49,8 +48,8 @@ public class MainActivity extends BaseActivity {
         verifyStoragePermissions(this);
         sdcardPath = Util.getSdcardPath();
         OKHttp.init(getApplicationContext());
-        Tractor.postSticky(1245,1234);
-        LocalBroadcastManager la;
+        Tractor.init(this);
+        Tractor.postSticky(1245, 1234);
     }
 
     // Storage Permissions
@@ -179,8 +178,7 @@ public class MainActivity extends BaseActivity {
                     @Override
                     public void onSuccess(Object result) {
                         super.onSuccess(result);
-                        HttpResponse response = (HttpResponse) result;
-                        toast(response.body().string());
+                        toast(HttpResponse.getString(result));
                     }
 
                     @Override
@@ -201,8 +199,7 @@ public class MainActivity extends BaseActivity {
                     @Override
                     public void onSuccess(Object result) {
                         super.onSuccess(result);
-                        HttpResponse response = (HttpResponse) result;
-                        toast(response.body().string());
+                        toast(HttpResponse.getString(result));
                     }
 
                     @Override
@@ -242,8 +239,7 @@ public class MainActivity extends BaseActivity {
                     @Override
                     public void onSuccess(Object result) {
                         super.onSuccess(result);
-                        HttpResponse response = (HttpResponse) result;
-                        setMessage(response.body().string());
+                        setMessage(HttpResponse.getString(result));
                     }
 
                     @Override

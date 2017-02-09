@@ -1,6 +1,5 @@
 package com.andbase.tractor.handler;
 
-import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
@@ -40,7 +39,6 @@ public class LoadHandler extends Handler {
     @Override
     public void handleMessage(Message msg) {
         super.handleMessage(msg);
-        Bundle bundle = msg.getData();
         if (mStatus == Constants.LOAD_FAIL || mStatus == Constants.LOAD_SUCCESS
                 || mStatus == Constants.LOAD_CANCEL || mStatus == Constants.LOAD_TIMEOUT) {
             LogUtils.d("mstatus=" + mStatus);
@@ -55,47 +53,27 @@ public class LoadHandler extends Handler {
                 break;
             case Constants.LOAD_ING:// 开始加载
                 if (listener != null) {
-                    Object result = null;
-                    if (bundle != null) {
-                        result = bundle.get("result");
-                    }
-                    listener.onLoading(result);
+                    listener.onLoading(msg.obj);
                 }
                 break;
             case Constants.LOAD_SUCCESS:// 加载成功
                 if (listener != null) {
-                    Object result = null;
-                    if (bundle != null) {
-                        result = bundle.get("result");
-                    }
-                    listener.onSuccess(result);
+                    listener.onSuccess(msg.obj);
                 }
                 break;
             case Constants.LOAD_FAIL:// 加载失败
                 if (listener != null) {
-                    Object result = null;
-                    if (bundle != null) {
-                        result = bundle.get("result");
-                    }
-                    listener.onFail(result);
+                    listener.onFail(msg.obj);
                 }
                 break;
             case Constants.LOAD_CANCEL:// 加载取消
                 if (listener != null) {
-                    Object result = null;
-                    if (bundle != null) {
-                        result = bundle.get("result");
-                    }
-                    listener.onCancel(result);
+                    listener.onCancel(msg.obj);
                 }
                 break;
             case Constants.LOAD_TIMEOUT:// 加载超时
                 if (listener != null) {
-                    Object result = null;
-                    if (bundle != null) {
-                        result = bundle.get("result");
-                    }
-                    listener.onTimeout(result);
+                    listener.onTimeout(msg.obj);
                 }
                 break;
 
