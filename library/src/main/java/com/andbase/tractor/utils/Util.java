@@ -5,8 +5,6 @@ import android.content.Context;
 import android.os.Environment;
 import android.os.Process;
 
-import com.google.gson.Gson;
-
 import java.io.Closeable;
 import java.io.IOException;
 import java.net.ServerSocket;
@@ -17,35 +15,6 @@ import java.util.UUID;
  * Created by huxq17 on 2015/11/20.
  */
 public class Util {
-    private static final Gson GSON = new Gson();
-
-    public static String encode(Object object) {
-        if (object == null) {
-            return null;
-        } else {
-            try {
-                return GSON.toJson(object);
-            } catch (RuntimeException e) {
-                e.printStackTrace();
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }
-        return null;
-    }
-
-    public static <T> T decode(String data, Class<T> clazz) {
-        try {
-            return GSON.fromJson(data, clazz);
-        } catch (RuntimeException e) {
-            e.printStackTrace();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return null;
-
-    }
-
     public static boolean isMainProcess(Context context) {
         LogUtils.e("processInfo.processName=" + getCurrentProcessName(context) + "; context.getPackageName()=" + context.getPackageName() + ";pid=" + android.os.Process.myPid());
         return context.getPackageName().equals(getCurrentProcessName(context));
